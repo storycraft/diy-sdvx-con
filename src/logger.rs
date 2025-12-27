@@ -5,7 +5,7 @@ use embassy_usb::{
 
 use crate::config;
 
-pub fn setup_logger_task<'a, D: Driver<'a>>(
+pub fn logger_task<'a, D: Driver<'a>>(
     state: &'a mut cdc_acm::State<'a>,
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {

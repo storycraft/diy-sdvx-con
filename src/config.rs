@@ -1,6 +1,6 @@
 use usbd_hid::descriptor::SerializedDescriptor;
 
-use crate::gamepad::GamepadInputReport;
+use crate::usb::hid::GamepadInputReport;
 
 pub const USB_CONFIG: embassy_usb::Config = usb_config();
 
