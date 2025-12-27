@@ -2,21 +2,22 @@
 #![no_main]
 
 mod config;
+mod gamepad;
 mod logger;
 
-use crate::logger::setup_logger_task;
+use crate::{gamepad::GamepadInputReport, logger::setup_logger_task};
 use embassy_executor::Spawner;
 use embassy_futures::join::join3;
 use embassy_rp::{
-    bind_interrupts,
-    peripherals::USB,
+    Peri, bind_interrupts,
+    gpio::{Input, Pull},
+    peripherals::{PIN_3, USB},
     usb::{Driver as UsbDriver, InterruptHandler},
 };
 use embassy_usb::class::{
     cdc_acm::{self},
     hid::{self, HidWriter},
 };
-use usbd_hid::descriptor::KeyboardReport;
 
 use {defmt_rtt as _, panic_halt as _};
 
@@ -33,7 +34,7 @@ async fn main(spawner: Spawner) {
     let driver = UsbDriver::new(p.USB, Irqs);
     log::info!("USB driver initialized.");
 
-    let usb_task = usb_task(driver);
+    let usb_task = usb_task(p.PIN_3, driver);
     log::info!("USB devices initialized.");
     _ = spawner.spawn(usb_task);
 
@@ -45,8 +46,8 @@ async fn main(spawner: Spawner) {
 }
 
 #[embassy_executor::task]
-async fn usb_task(driver: UsbDriver<'static, USB>) {
-    log::debug!("Initializing USB devices...");
+async fn usb_task(pin: Peri<'static, PIN_3>, driver: UsbDriver<'static, USB>) {
+    log::info!("Initializing USB devices...");
 
     // Allocates descriptor and control buffer
     let mut config_descriptor = [0; 256];
@@ -73,12 +74,13 @@ async fn usb_task(driver: UsbDriver<'static, USB>) {
             HidWriter::<_, 8>::new(&mut builder, &mut hid_state, config::usb_gamepad_config());
 
         async move {
+            let button = Input::new(pin, Pull::Up);
             loop {
-                let report = KeyboardReport {
-                    keycodes: [4, 0, 0, 0, 0, 0],
-                    leds: 0,
-                    modifier: 0,
-                    reserved: 0,
+                log::info!("button: {}", button.is_low());
+                let report = GamepadInputReport {
+                    buttons_0: 0,
+                    buttons_1: 0,
+                    dpad: if button.is_low() { 2 } else { 0 } ,
                 };
 
                 match writer.write_serialize(&report).await {

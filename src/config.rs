@@ -1,4 +1,6 @@
-use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
+use usbd_hid::descriptor::SerializedDescriptor;
+
+use crate::gamepad::GamepadInputReport;
 
 pub const USB_CONFIG: embassy_usb::Config = usb_config();
 
@@ -18,9 +20,9 @@ const fn usb_config() -> embassy_usb::Config<'static> {
 
 pub fn usb_gamepad_config<'a>() -> embassy_usb::class::hid::Config<'a> {
     embassy_usb::class::hid::Config {
-        report_descriptor: KeyboardReport::desc(),
+        report_descriptor: GamepadInputReport::desc(),
         request_handler: None,
-        poll_ms: 60,
+        poll_ms: 1,
         max_packet_size: 64,
     }
 }
