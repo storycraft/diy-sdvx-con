@@ -1,10 +1,16 @@
 use usbd_hid::descriptor::{SerializedDescriptor, generator_prelude::*};
 
-/// HID report and descriptor for a gamepad with buttons and axes.
+/// HID report and descriptor for a gamepad with buttons and D-pad.
 #[repr(C, packed)]
 pub struct GamepadInputReport {
+    /// Button states from button 1 to button 8
     pub buttons_0: u8,
+
+    /// Button states from button 9 to button 16
     pub buttons_1: u8,
+
+    /// D-pad state (0-4)
+    /// 0: centered, 1: up, 2: left, 3: down, 4: right
     pub dpad: u8,
 }
 
