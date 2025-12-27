@@ -645,7 +645,6 @@ dependencies = [
  "log",
  "panic-halt",
  "usbd-hid",
- "usbd-hid-macros",
 ]
 
 [[package]]

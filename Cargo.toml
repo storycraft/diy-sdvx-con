@@ -38,7 +38,6 @@ log = { version = "0.4.29", features = ["release_max_level_info"] }
 critical-section = "1.2.0"
 defmt-rtt = "1.1.0"
 usbd-hid = { version = "0.8.2", features = ["defmt"] }
-usbd-hid-macros = "0.8.2"
 
 [package.metadata.embassy]
 build = [
