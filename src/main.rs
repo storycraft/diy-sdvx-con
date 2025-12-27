@@ -29,12 +29,15 @@ async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
     log::info!("System initialized.");
 
-    log::info!("Setting up USB driver...");
+    log::info!("Initializing USB driver...");
     let driver = UsbDriver::new(p.USB, Irqs);
     log::info!("USB driver initialized.");
 
-    _ = spawner.spawn(usb_task(driver));
+    let usb_task = usb_task(driver);
+    log::info!("USB devices initialized.");
+    _ = spawner.spawn(usb_task);
 
+    log::info!("System started.");
     loop {
         // log::info!("Hello world!");
         embassy_futures::yield_now().await;
@@ -90,6 +93,5 @@ async fn usb_task(driver: UsbDriver<'static, USB>) {
     let logger_task = setup_logger_task(&mut serial_state, &mut builder);
     let mut device = builder.build();
 
-    log::info!("Starting USB devices...");
     join3(device.run(), logger_task, keyboard_task).await;
 }
