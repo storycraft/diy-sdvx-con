@@ -140,5 +140,6 @@ async fn knob_task<'a>(
 fn button<'a>(pin: Peri<'a, impl Pin>) -> Input<'a> {
     let mut input = Input::new(pin, Pull::Up);
     input.set_schmitt(true);
+    input.set_inversion(true);
     input
 }
