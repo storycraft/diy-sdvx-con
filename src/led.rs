@@ -1,8 +1,14 @@
+use embassy_futures::join::join;
 use embassy_rp::{
     Peri,
     gpio::{Level, Output, Pin},
     peripherals::*,
 };
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex,
+    watch::{self, Watch},
+};
+
 use embassy_time::Timer;
 
 pub struct LedConfig {
@@ -22,18 +28,50 @@ pub struct LedPinout {
     pub start: Peri<'static, PIN_14>,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct LedState {
+    pub button_1: Level,
+    pub button_2: Level,
+    pub button_3: Level,
+    pub button_4: Level,
+
+    pub fx_1: Level,
+    pub fx_2: Level,
+
+    pub start: Level,
+}
+
+static LED_STATE: Watch<CriticalSectionRawMutex, LedState, 1> = Watch::new();
+
+#[inline]
+pub fn led_sender<'a>() -> watch::Sender<'a, CriticalSectionRawMutex, LedState, 1> {
+    LED_STATE.sender()
+}
+
 #[embassy_executor::task]
 pub async fn led_task(cfg: LedConfig) {
-    let button_1 = led(cfg.pins.button_1);
-    let button_2 = led(cfg.pins.button_2);
-    let button_3 = led(cfg.pins.button_3);
-    let button_4 = led(cfg.pins.button_4);
-    let fx_left = led(cfg.pins.fx_1);
-    let fx_right = led(cfg.pins.fx_2);
-    let start = led(cfg.pins.start);
+    // There can be only one led_task existing at a time, so unwrap is safe here
+    let mut receiver = LED_STATE.receiver().unwrap();
+
+    let mut button_1 = led(cfg.pins.button_1);
+    let mut button_2 = led(cfg.pins.button_2);
+    let mut button_3 = led(cfg.pins.button_3);
+    let mut button_4 = led(cfg.pins.button_4);
+    let mut fx_1 = led(cfg.pins.fx_1);
+    let mut fx_2 = led(cfg.pins.fx_2);
+    let mut start = led(cfg.pins.start);
 
     loop {
-        Timer::after_secs(1).await;
+        // Limit updates maximum 125Hz
+        let (state, _) = join(receiver.changed(), Timer::after_millis(8)).await;
+
+        button_1.set_level(state.button_1);
+        button_2.set_level(state.button_2);
+        button_3.set_level(state.button_3);
+        button_4.set_level(state.button_4);
+        fx_1.set_level(state.fx_1);
+        fx_2.set_level(state.fx_2);
+        start.set_level(state.start);
     }
 }
 
