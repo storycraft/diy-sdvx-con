@@ -1,4 +1,4 @@
-use embassy_rp::rom_data::reboot;
+use embassy_rp::rom_data;
 use embassy_time::Instant;
 use embassy_usb::{
     class::hid::{self, HidReaderWriter},
@@ -69,9 +69,9 @@ async fn read_via_cmd(data: &mut [u8]) {
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_KEYCODE => {
-            let layer = data[1];
-            let row = data[2];
-            let col = data[3];
+            let _layer = data[1];
+            let _row = data[2];
+            let _col = data[3];
 
             let key = 0_u16.to_be_bytes();
             data[4] = key[0];
@@ -79,10 +79,10 @@ async fn read_via_cmd(data: &mut [u8]) {
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
-            let layer = data[1];
-            let row = data[2];
-            let col = data[3];
-            let key = ((data[4] as u16) << 8) | data[5] as u16;
+            let _layer = data[1];
+            let _row = data[2];
+            let _col = data[3];
+            let _key = ((data[4] as u16) << 8) | data[5] as u16;
             // TODO
         }
 
@@ -100,9 +100,9 @@ async fn read_via_cmd(data: &mut [u8]) {
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {
-            let layer = data[1];
-            let row = data[2];
-            let col = data[3];
+            let _layer = data[1];
+            let _row = data[2];
+            let _col = data[3];
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {}
@@ -194,8 +194,9 @@ async fn read_custom_set_value(data: &mut [u8]) {
     let value_id = data[2];
     match value_id {
         ValueId::REBOOT_BOOTSEL => {
+            log::info!("Reboot BOOTSEL");
             // Reboot to BOOTSEL
-            reboot(2 /* REBOOT_TYPE_BOOTSEL */, 0, 0, 0);
+            rom_data::reset_to_usb_boot(0, 0);
         }
 
         _ => {
