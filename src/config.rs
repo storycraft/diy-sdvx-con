@@ -31,7 +31,7 @@ pub fn usb_via_config<'a>() -> embassy_usb::class::hid::Config<'a> {
     embassy_usb::class::hid::Config {
         report_descriptor: QmkRawHidReport::desc(),
         request_handler: None,
-        poll_ms: 250,
+        poll_ms: 8,
         max_packet_size: 32,
     }
 }
