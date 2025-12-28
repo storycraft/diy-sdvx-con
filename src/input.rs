@@ -178,14 +178,14 @@ fn input_report(last_state: &InputState, state: &InputState) -> GamepadInputRepo
     let left_knob_delta = knob_delta(last_state.left_knob, state.left_knob);
     let right_knob_delta = knob_delta(last_state.right_knob, state.right_knob);
 
-    let buttons: u16 = ((state.button_1 == Level::High) as u16) << 7 // A Button (Button 7)
-                | ((state.button_2 == Level::High) as u16) << 5 // B Button (Button 5)
-                | ((state.button_3 == Level::High) as u16) << 6 // C Button (Button 6)
-                | ((state.button_4 == Level::High) as u16) << 8 // D Button (Button 8)
-                | ((state.fx_2 == Level::High) as u16) << 2 // FX Right (Button 2)
-                | ((state.start == Level::High) as u16) << 10 // Start (Button 10)
-                | ((right_knob_delta < 0) as u16) << 1 // Right knob left turn (Button 1)
-                | ((right_knob_delta > 0) as u16) << 3; // Right knob right turn (Button 3)
+    let buttons: u16 = ((state.button_1 == Level::High) as u16) << 6 // A Button (Button 7)
+                | ((state.button_2 == Level::High) as u16) << 4 // B Button (Button 5)
+                | ((state.button_3 == Level::High) as u16) << 5 // C Button (Button 6)
+                | ((state.button_4 == Level::High) as u16) << 7 // D Button (Button 8)
+                | ((state.fx_2 == Level::High) as u16) << 1 // FX Right (Button 2)
+                | ((state.start == Level::High) as u16) << 9 // Start (Button 10)
+                | ((right_knob_delta < 0) as u16) // Right knob left turn (Button 1)
+                | ((right_knob_delta > 0) as u16) << 2; // Right knob right turn (Button 3)
     let [buttons_0, buttons_1] = buttons.to_ne_bytes();
 
     let dpad = if state.fx_1 == Level::High {
