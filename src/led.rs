@@ -3,6 +3,7 @@ use embassy_rp::{
     gpio::{Level, Output, Pin},
     peripherals::*,
 };
+use embassy_time::Timer;
 
 pub struct LedConfig {
     /// LED pinout
@@ -32,7 +33,7 @@ pub async fn led_task(cfg: LedConfig) {
     let start = led(cfg.pins.start);
 
     loop {
-        
+        Timer::after_secs(1).await;
     }
 }
 
