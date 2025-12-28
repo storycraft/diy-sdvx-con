@@ -2,7 +2,7 @@ use embassy_rp::{
     Peri,
     adc::{self, Adc},
     dma,
-    gpio::{Input, Pin, Pull},
+    gpio::{Input, Level, Pin, Pull},
     peripherals::*,
 };
 use embassy_usb::{
@@ -10,7 +10,11 @@ use embassy_usb::{
     driver::Driver,
 };
 
-use crate::{config, usb::hid::GamepadInputReport};
+use crate::{
+    config,
+    led::{LedState, led_sender},
+    usb::hid::GamepadInputReport,
+};
 
 pub struct InputConfig {
     /// ADC for knob analog conversion
@@ -38,6 +42,19 @@ pub struct InputPinout {
     pub knob_right: Peri<'static, PIN_27>,
 }
 
+#[derive(Clone, Copy)]
+struct ButtonState {
+    pub button_1: Level,
+    pub button_2: Level,
+    pub button_3: Level,
+    pub button_4: Level,
+
+    pub fx_1: Level,
+    pub fx_2: Level,
+
+    pub start: Level,
+}
+
 pub fn input_task<'a, D: Driver<'a>>(
     cfg: InputConfig,
     state: &'a mut hid::State<'a>,
@@ -49,8 +66,8 @@ pub fn input_task<'a, D: Driver<'a>>(
     let button_2 = button(cfg.pins.button_2);
     let button_3 = button(cfg.pins.button_3);
     let button_4 = button(cfg.pins.button_4);
-    let fx_left = button(cfg.pins.fx_1);
-    let fx_right = button(cfg.pins.fx_2);
+    let fx_1 = button(cfg.pins.fx_1);
+    let fx_2 = button(cfg.pins.fx_2);
     let start = button(cfg.pins.start);
 
     let knob_left = adc::Channel::new_pin(cfg.pins.knob_left, Pull::None);
@@ -58,18 +75,39 @@ pub fn input_task<'a, D: Driver<'a>>(
     let knobs = [knob_left, knob_right];
     let mut knob_inputs = [0u16; 2];
 
+    let led_sender = led_sender();
     async move {
         writer.ready().await;
 
         loop {
-            let buttons: u16 = (button_1.is_high() as u16) << 7 // A Button (Button 7)
-                | (button_2.is_high() as u16) << 5 // B Button (Button 5)
-                | (button_3.is_high() as u16) << 6 // C Button (Button 6)
-                | (button_4.is_high() as u16) << 8 // D Button (Button 8)
-                | (fx_right.is_high() as u16) << 2 // FX Right (Button 2)
-                | (start.is_high() as u16) << 1; // Start (Button 1)
+            let state = ButtonState {
+                button_1: button_1.get_level(),
+                button_2: button_2.get_level(),
+                button_3: button_3.get_level(),
+                button_4: button_4.get_level(),
+                fx_1: fx_1.get_level(),
+                fx_2: fx_2.get_level(),
+                start: start.get_level(),
+            };
 
+            led_sender.send(LedState {
+                button_1: state.button_1,
+                button_2: state.button_2,
+                button_3: state.button_3,
+                button_4: state.button_4,
+                fx_1: state.fx_1,
+                fx_2: state.fx_2,
+                start: state.start,
+            });
+
+            let buttons: u16 = ((state.button_1 == Level::High) as u16) << 7 // A Button (Button 7)
+                | ((state.button_2 == Level::High) as u16) << 5 // B Button (Button 5)
+                | ((state.button_3 == Level::High) as u16) << 6 // C Button (Button 6)
+                | ((state.button_4 == Level::High) as u16) << 8 // D Button (Button 8)
+                | ((state.fx_2 == Level::High) as u16) << 2 // FX Right (Button 2)
+                | ((state.start == Level::High) as u16) << 1; // Start (Button 1)
             let [buttons_0, buttons_1] = buttons.to_be_bytes();
+
             match writer
                 .write_serialize(&GamepadInputReport {
                     buttons_0,
