@@ -135,7 +135,7 @@ pub fn input_task<'a, D: Driver<'a>>(
         let mut last_state = InputState::read(
             &mut cfg.adc,
             &mut cfg.dma,
-            &mut buttons,
+            &buttons,
             &mut knobs,
             &mut knob_buf,
         )
@@ -144,7 +144,7 @@ pub fn input_task<'a, D: Driver<'a>>(
             let state = InputState::read(
                 &mut cfg.adc,
                 &mut cfg.dma,
-                &mut buttons,
+                &buttons,
                 &mut knobs,
                 &mut knob_buf,
             )
