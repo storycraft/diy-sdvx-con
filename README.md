@@ -9,3 +9,7 @@ cargo run --release
 ## Requirements
 - Rust Toolchain (for development. With `thumbv8m.main-none-eabihf` target)
 - picotool (for flashing the firmware)
+
+
+## License
+The firmware source code is licensed under Apache-2.0.
