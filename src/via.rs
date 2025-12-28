@@ -47,6 +47,8 @@ impl ViaCmdId {
     pub const CUSTOM_SET_VALUE: u8 = 0x07;
     pub const CUSTOM_GET_VALUE: u8 = 0x08;
     pub const CUSTOM_SAVE: u8 = 0x09;
+    pub const DYNAMIC_KEYMAP_MACRO_GET_COUNT: u8 = 0x0C;
+    pub const DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE: u8 = 0x0D;
     pub const DYNAMIC_KEYMAP_GET_LAYER_COUNT: u8 = 0x11;
     pub const DYNAMIC_KEYMAP_GET_BUFFER: u8 = 0x12;
     pub const DYNAMIC_KEYMAP_SET_BUFFER: u8 = 0x13;
@@ -92,6 +94,16 @@ async fn read_via_cmd(data: &mut [u8]) {
 
         ViaCmdId::CUSTOM_SET_VALUE => {
             read_custom_set_value(data).await;
+        }
+
+        // Disable Macro
+        ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_COUNT => {
+            data[1] = 0;
+        }
+
+        // Disable Macro
+        ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE => {
+            data[1] = 0;
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_LAYER_COUNT => {
