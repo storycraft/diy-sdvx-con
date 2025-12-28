@@ -1,11 +1,18 @@
-use embassy_rp::rom_data;
-use embassy_time::Instant;
+mod custom;
+mod keyboard;
+
 use embassy_usb::{
     class::hid::{self, HidReaderWriter},
     driver::Driver,
 };
 
-use crate::config;
+use crate::{
+    config,
+    via::{
+        custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
+        keyboard::read_via_keyboard_value,
+    },
+};
 
 pub fn via_task<'a, D: Driver<'a>>(
     state: &'a mut hid::State<'a>,
@@ -96,6 +103,10 @@ async fn read_via_cmd(data: &mut [u8]) {
             read_custom_set_value(data).await;
         }
 
+        ViaCmdId::CUSTOM_SAVE => {
+            read_custom_save(data).await;
+        }
+
         // Disable Macro
         ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_COUNT => {
             data[1] = 0;
@@ -117,101 +128,23 @@ async fn read_via_cmd(data: &mut [u8]) {
             let _col = data[3];
         }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {}
+        ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
+            let _layer = data[1];
+            let _encoder_id = data[2];
+            let _clockwise = data[3] != 0;
+            let _keycode = (data[4] as u16) << 8 | data[5] as u16;
+        }
 
-        ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {}
+        ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {
+            // TODO
+            let _layer = data[1];
+            let _encoder_id = data[2];
+            let _clockwise = data[3] != 0;
+            let _keycode = (data[4] as u16) << 8 | data[5] as u16;
+        }
 
         _ => {
             log::warn!("Invalid via command recevied: {id:#04X}");
-            data[0] = ViaCmdId::UNHANDLED;
-        }
-    }
-}
-
-/// Via keyboard value id from
-/// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L79
-struct ViaKeyboardValueId;
-impl ViaKeyboardValueId {
-    pub const UPTIME: u8 = 0x01;
-    pub const LAYOUT_OPTIONS: u8 = 0x02;
-    pub const SWITCH_MATRIX_STATE: u8 = 0x03;
-    pub const FIRMWARE_VERSION: u8 = 0x04;
-    pub const DEVICE_INDICATION: u8 = 0x05;
-}
-
-async fn read_via_keyboard_value<'a>(data: &mut [u8]) {
-    let id = data[1];
-
-    match id {
-        ViaKeyboardValueId::UPTIME => {
-            let now = (Instant::now().as_millis() as u32).to_be_bytes();
-            data[2] = now[0];
-            data[3] = now[1];
-            data[4] = now[2];
-            data[5] = now[3];
-        }
-
-        _ => {
-            data[0] = ViaCmdId::UNHANDLED;
-            log::warn!("Invalid via keyboard value requested: {id:#04X}");
-        }
-    }
-}
-
-struct ValueId;
-impl ValueId {
-    /// Set controller input mode
-    pub const CONTROLLER_MODE: u8 = 0x01;
-    /// Reboot to BOOTSEL
-    pub const REBOOT_BOOTSEL: u8 = 0x02;
-}
-
-async fn read_custom_get_value(data: &mut [u8]) {
-    let channel_id = data[1];
-
-    // 0 for custom user defined channel
-    // We will only use user defined channel so ignore rest
-    if channel_id != 0 {
-        data[0] = ViaCmdId::UNHANDLED;
-        return;
-    }
-
-    let value_id = data[2];
-    match value_id {
-        ValueId::CONTROLLER_MODE => {
-            // TODO:: 0 Gamepad, 1 Keyboard + Mouse
-            data[3] = 0;
-        }
-
-        ValueId::REBOOT_BOOTSEL => {
-            data[3] = 1;
-        }
-
-        _ => {
-            data[0] = ViaCmdId::UNHANDLED;
-        }
-    }
-}
-
-async fn read_custom_set_value(data: &mut [u8]) {
-    let channel_id = data[1];
-
-    // 0 for custom user defined channel
-    // We will only use user defined channel so ignore rest
-    if channel_id != 0 {
-        data[0] = ViaCmdId::UNHANDLED;
-        return;
-    }
-
-    let value_id = data[2];
-    match value_id {
-        ValueId::REBOOT_BOOTSEL => {
-            log::info!("Reboot BOOTSEL");
-            // Reboot to BOOTSEL
-            rom_data::reset_to_usb_boot(0, 0);
-        }
-
-        _ => {
             data[0] = ViaCmdId::UNHANDLED;
         }
     }
