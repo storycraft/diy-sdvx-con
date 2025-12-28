@@ -106,7 +106,7 @@ pub fn input_task<'a, D: Driver<'a>>(
                 | ((state.button_4 == Level::High) as u16) << 8 // D Button (Button 8)
                 | ((state.fx_2 == Level::High) as u16) << 2 // FX Right (Button 2)
                 | ((state.start == Level::High) as u16) << 1; // Start (Button 1)
-            let [buttons_0, buttons_1] = buttons.to_be_bytes();
+            let [buttons_0, buttons_1] = buttons.to_ne_bytes();
 
             match writer
                 .write_serialize(&GamepadInputReport {
