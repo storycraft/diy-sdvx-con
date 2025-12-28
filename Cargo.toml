@@ -31,6 +31,10 @@ embassy-executor = { version = "0.9.1", features = [
 embassy-usb = { version = "0.5.1", features = ["defmt"] }
 embassy-futures = { version = "0.1.2", features = ["defmt"] }
 embassy-usb-logger = "0.5.1"
+embassy-time = { version = "0.5.0", features = [
+  "defmt",
+  "defmt-timestamp-uptime",
+] }
 
 defmt = "1.0.1"
 panic-halt = "1.0.0"
