@@ -5,6 +5,7 @@ mod config;
 mod input;
 mod led;
 mod logger;
+mod storage;
 mod usb;
 
 use crate::{

@@ -1,10 +1,16 @@
+__userdata_size = 4k;
+
 MEMORY {
     /*
      * The RP2350 has either external or internal flash.
      *
      * 2 MiB is a safe default here, although a Pico 2 has 4 MiB.
      */
-    FLASH : ORIGIN = 0x10000000, LENGTH = 2048K
+    FLASH : ORIGIN = 0x10000000, LENGTH = 2048K - __userdata_size
+    /*
+     * Userdata area for persistent firmware data storage
+     */
+    USERDATA(rw) : ORIGIN = 0x10000000 + (2048k - __userdata_size), LENGTH = __userdata_size
     /*
      * RAM consists of 8 banks, SRAM0-SRAM7, with a striped mapping.
      * This is usually good for performance, as it distributes load on
@@ -73,3 +79,13 @@ SECTIONS {
 
 PROVIDE(start_to_end = __end_block_addr - __start_block_addr);
 PROVIDE(end_to_start = __start_block_addr - __end_block_addr);
+
+SECTIONS {
+    /*
+     * Userdata info
+     */
+    .userdata :
+    {
+        __userdata_start = .;
+    } > USERDATA
+}
