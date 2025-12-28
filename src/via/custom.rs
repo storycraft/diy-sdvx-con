@@ -49,6 +49,10 @@ pub async fn read_custom_set_value(data: &mut [u8]) {
 
     let value_id = data[2];
     match value_id {
+        ValueId::CONTROLLER_MODE => {
+            // TODO
+        }
+
         ValueId::REBOOT_BOOTSEL => {
             // Reboot to BOOTSEL
             rom_data::reset_to_usb_boot(0, 0);
