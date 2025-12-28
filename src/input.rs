@@ -134,7 +134,6 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
                 | ((input.start == Level::High) as u16) << 9 // Start (Button 10)
                 | ((input.right_knob == KnobTurn::Left) as u16) // Right knob left turn (Button 1)
                 | ((input.right_knob == KnobTurn::Right) as u16) << 2; // Right knob right turn (Button 3)
-    let [buttons_0, buttons_1] = buttons.to_ne_bytes();
 
     let dpad = if input.fx_1 == Level::High {
         // FX Left (Dpad down) + Left knob turns
@@ -147,11 +146,7 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
         0
     };
 
-    GamepadInputReport {
-        buttons_0,
-        buttons_1,
-        dpad,
-    }
+    GamepadInputReport { buttons, dpad }
 }
 
 #[inline(always)]

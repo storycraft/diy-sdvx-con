@@ -1,13 +1,9 @@
 use usbd_hid::descriptor::{SerializedDescriptor, generator_prelude::*};
 
 /// HID report and descriptor for a gamepad with buttons and D-pad.
-#[repr(C, packed)]
 pub struct GamepadInputReport {
-    /// Button states from button 1 to button 8
-    pub buttons_0: u8,
-
-    /// Button states from button 9 to button 16
-    pub buttons_1: u8,
+    /// Button states from button 1 to button 16
+    pub buttons: u16,
 
     /// D-pad state (0-8)
     /// 0: centered, 1: up, 2: up-left, 3: left, 4: down-left, 5: down, 6: down-right, 7: right, 8: up-right
@@ -57,9 +53,8 @@ impl Serialize for GamepadInputReport {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_tuple(3)?;
-        s.serialize_element(&self.buttons_0)?;
-        s.serialize_element(&self.buttons_1)?;
+        let mut s = serializer.serialize_tuple(2)?;
+        s.serialize_element(&self.buttons)?;
         s.serialize_element(&self.dpad)?;
         s.end()
     }
@@ -68,7 +63,7 @@ impl Serialize for GamepadInputReport {
 impl AsInputReport for GamepadInputReport {}
 
 /// Raw HID report compatible with QMK Raw HID.
-#[repr(C, packed)]
+#[repr(transparent)]
 pub struct QmkRawHidReport {
     pub data: [u8; 32],
 }
