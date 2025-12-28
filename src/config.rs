@@ -23,7 +23,7 @@ pub fn usb_gamepad_config<'a>() -> embassy_usb::class::hid::Config<'a> {
         report_descriptor: GamepadInputReport::desc(),
         request_handler: None,
         poll_ms: 1,
-        max_packet_size: 64,
+        max_packet_size: 8,
     }
 }
 
