@@ -9,8 +9,8 @@ pub struct GamepadInputReport {
     /// Button states from button 9 to button 16
     pub buttons_1: u8,
 
-    /// D-pad state (0-4)
-    /// 0: centered, 1: up, 2: left, 3: down, 4: right
+    /// D-pad state (0-8)
+    /// 0: centered, 1: up, 2: up-left, 3: left, 4: down-left, 5: down, 6: down-right, 7: right, 8: up-right
     pub dpad: u8,
 }
 
@@ -32,14 +32,14 @@ impl SerializedDescriptor for GamepadInputReport {
             0x05, 0x01, //          Usage Page (Generic Desktop Ctrls)
             0x09, 0x39, //          Usage (Hat switch)
             0x15, 0x01, //          Logical Minimum (1)
-            0x25, 0x04, //          Logical Maximum (4)
+            0x25, 0x08, //          Logical Maximum (8)
             0x35, 0x00, //          Physical Minimum (0)
-            0x46, 0x0e, 0x01, //    Physical Maximum (270)
+            0x46, 0x3B, 0x01, //    Physical Maximum (315)
             0x66, 0x14, 0x00, //    Unit (System: English Rotation, Length: Centimeter)
-            0x75, 0x03, //          Report Size (3)
+            0x75, 0x04, //          Report Size (4)
             0x95, 0x01, //          Report Count (1)
             0x81, 0x02, //          Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-            0x75, 0x05, //          Report Size (5)
+            0x75, 0x04, //          Report Size (4)
             0x95, 0x01, //          Report Count (1)
             0x15, 0x00, //          Logical Minimum (0)
             0x25, 0x00, //          Logical Maximum (0)
