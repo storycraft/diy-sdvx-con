@@ -7,7 +7,7 @@ use embassy_rp::{
 };
 
 pub struct InputReader<'a> {
-    inputs: ControllerInputs<'a>,
+    inputs: InputDriver<'a>,
 
     /// ADC for knob analog conversion
     adc: Adc<'a, adc::Async>,
@@ -18,11 +18,7 @@ pub struct InputReader<'a> {
 }
 
 impl<'a> InputReader<'a> {
-    pub fn new(
-        adc: Adc<'a, adc::Async>,
-        dma: Peri<'a, DMA_CH0>,
-        inputs: ControllerInputs<'a>,
-    ) -> Self {
+    pub fn new(adc: Adc<'a, adc::Async>, dma: Peri<'a, DMA_CH0>, inputs: InputDriver<'a>) -> Self {
         Self {
             inputs,
 
@@ -65,7 +61,7 @@ impl<'a> InputReader<'a> {
     }
 }
 
-pub struct ControllerInputs<'a> {
+pub struct InputDriver<'a> {
     pub button_1: Input<'a>,
     pub button_2: Input<'a>,
     pub button_3: Input<'a>,

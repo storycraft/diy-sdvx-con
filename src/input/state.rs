@@ -31,8 +31,9 @@ impl KnobState {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum KnobTurn {
+    #[default]
     None,
     Left,
     Right,
