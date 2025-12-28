@@ -41,6 +41,20 @@ pub struct LedState {
     pub start: Level,
 }
 
+impl Default for LedState {
+    fn default() -> Self {
+        Self {
+            button_1: Level::Low,
+            button_2: Level::Low,
+            button_3: Level::Low,
+            button_4: Level::Low,
+            fx_1: Level::Low,
+            fx_2: Level::Low,
+            start: Level::Low,
+        }
+    }
+}
+
 static LED_STATE: Watch<CriticalSectionRawMutex, LedState, 1> = Watch::new();
 
 #[inline]
@@ -61,9 +75,14 @@ pub async fn led_task(cfg: LedConfig) {
     let mut fx_2 = led(cfg.pins.fx_2);
     let mut start = led(cfg.pins.start);
 
+    let mut last_state = LedState::default();
     loop {
         // Limit updates maximum 125Hz
-        let (state, _) = join(receiver.changed(), Timer::after_millis(8)).await;
+        let (state, _) = join(
+            receiver.changed_and(|&state| last_state != state),
+            Timer::after_millis(8),
+        )
+        .await;
 
         button_1.set_level(state.button_1);
         button_2.set_level(state.button_2);
@@ -72,6 +91,8 @@ pub async fn led_task(cfg: LedConfig) {
         fx_1.set_level(state.fx_1);
         fx_2.set_level(state.fx_2);
         start.set_level(state.start);
+
+        last_state = state;
     }
 }
 
