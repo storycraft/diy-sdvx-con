@@ -1,3 +1,4 @@
+use embassy_rp::rom_data::reboot;
 use embassy_time::Instant;
 use embassy_usb::{
     class::hid::{self, HidReaderWriter},
@@ -40,6 +41,12 @@ struct ViaCmdId;
 impl ViaCmdId {
     pub const GET_PROTOCOL_VERSION: u8 = 0x01;
     pub const GET_KEYBOARD_VALUE: u8 = 0x02;
+    pub const DYNAMIC_KEYMAP_GET_KEYCODE: u8 = 0x04;
+    pub const DYNAMIC_KEYMAP_SET_KEYCODE: u8 = 0x05;
+    pub const DYNAMIC_KEYMAP_RESET: u8 = 0x06;
+    pub const CUSTOM_SET_VALUE: u8 = 0x07;
+    pub const CUSTOM_GET_VALUE: u8 = 0x08;
+    pub const CUSTOM_SAVE: u8 = 0x09;
     pub const DYNAMIC_KEYMAP_GET_LAYER_COUNT: u8 = 0x11;
     pub const DYNAMIC_KEYMAP_GET_BUFFER: u8 = 0x12;
     pub const DYNAMIC_KEYMAP_SET_BUFFER: u8 = 0x13;
@@ -58,7 +65,33 @@ async fn read_via_cmd(data: &mut [u8]) {
         }
 
         ViaCmdId::GET_KEYBOARD_VALUE => {
-            read_via_keyboard_value(&mut data[1..]).await;
+            read_via_keyboard_value(data).await;
+        }
+
+        ViaCmdId::DYNAMIC_KEYMAP_GET_KEYCODE => {
+            let layer = data[1];
+            let row = data[2];
+            let col = data[3];
+
+            let key = 0_u16.to_be_bytes();
+            data[4] = key[0];
+            data[5] = key[1];
+        }
+
+        ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
+            let layer = data[1];
+            let row = data[2];
+            let col = data[3];
+            let key = ((data[4] as u16) << 8) | data[5] as u16;
+            // TODO
+        }
+
+        ViaCmdId::CUSTOM_GET_VALUE => {
+            read_custom_get_value(data).await;
+        }
+
+        ViaCmdId::CUSTOM_SET_VALUE => {
+            read_custom_set_value(data).await;
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_LAYER_COUNT => {
@@ -66,7 +99,11 @@ async fn read_via_cmd(data: &mut [u8]) {
             data[1] = 1;
         }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {}
+        ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {
+            let layer = data[1];
+            let row = data[2];
+            let col = data[3];
+        }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {}
 
@@ -91,19 +128,78 @@ impl ViaKeyboardValueId {
 }
 
 async fn read_via_keyboard_value<'a>(data: &mut [u8]) {
-    let id = data[0];
+    let id = data[1];
 
     match id {
         ViaKeyboardValueId::UPTIME => {
             let now = (Instant::now().as_millis() as u32).to_be_bytes();
-            data[1] = now[0];
-            data[2] = now[1];
-            data[3] = now[2];
-            data[4] = now[3];
+            data[2] = now[0];
+            data[3] = now[1];
+            data[4] = now[2];
+            data[5] = now[3];
         }
 
         _ => {
+            data[0] = ViaCmdId::UNHANDLED;
             log::warn!("Invalid via keyboard value requested: {id:#04X}");
+        }
+    }
+}
+
+struct ValueId;
+impl ValueId {
+    /// Set controller input mode
+    pub const CONTROLLER_MODE: u8 = 0x01;
+    /// Reboot to BOOTSEL
+    pub const REBOOT_BOOTSEL: u8 = 0x02;
+}
+
+async fn read_custom_get_value(data: &mut [u8]) {
+    let channel_id = data[1];
+
+    // 0 for custom user defined channel
+    // We will only use user defined channel so ignore rest
+    if channel_id != 0 {
+        data[0] = ViaCmdId::UNHANDLED;
+        return;
+    }
+
+    let value_id = data[2];
+    match value_id {
+        ValueId::CONTROLLER_MODE => {
+            // TODO:: 0 Gamepad, 1 Keyboard + Mouse
+            data[3] = 0;
+        }
+
+        ValueId::REBOOT_BOOTSEL => {
+            data[3] = 1;
+        }
+
+        _ => {
+            data[0] = ViaCmdId::UNHANDLED;
+        }
+    }
+}
+
+async fn read_custom_set_value(data: &mut [u8]) {
+    let channel_id = data[1];
+
+    // 0 for custom user defined channel
+    // We will only use user defined channel so ignore rest
+    if channel_id != 0 {
+        data[0] = ViaCmdId::UNHANDLED;
+        return;
+    }
+
+    let value_id = data[2];
+    match value_id {
+        ValueId::REBOOT_BOOTSEL => {
+            // Reboot to BOOTSEL
+            reboot(2 /* REBOOT_TYPE_BOOTSEL */, 0, 0, 0);
+        }
+
+        _ => {
+            data[0] = ViaCmdId::UNHANDLED;
         }
     }
 }
