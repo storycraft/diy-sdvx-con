@@ -13,7 +13,7 @@ impl ViaKeyboardValueId {
     pub const DEVICE_INDICATION: u8 = 0x05;
 }
 
-pub async fn read_via_keyboard_value<'a>(data: &mut [u8]) {
+pub async fn read_via_keyboard_value(data: &mut [u8]) {
     let id = data[1];
 
     match id {

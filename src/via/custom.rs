@@ -71,6 +71,5 @@ pub async fn read_custom_save(data: &mut [u8]) {
     // We will only use user defined channel so ignore rest
     if channel_id != 0 {
         data[0] = ViaCmdId::UNHANDLED;
-        return;
     }
 }
