@@ -12,13 +12,16 @@ use crate::{
     led::{LedConfig, LedPinout, led_task},
     usb::usb_task,
 };
-use embassy_executor::Spawner;
+use embassy_executor::{Executor, Spawner};
 use embassy_rp::{
+    Peri,
     adc::{self, Adc},
     bind_interrupts,
-    peripherals::USB,
+    multicore::Stack,
+    peripherals::{CORE1, USB},
     usb::Driver as UsbDriver,
 };
+use static_cell::StaticCell;
 
 use {defmt_rtt as _, panic_halt as _};
 
@@ -28,7 +31,7 @@ bind_interrupts!(struct Irqs {
 });
 
 #[embassy_executor::main]
-async fn main(spawner: Spawner) {
+async fn main(_spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
     let adc = Adc::new(p.ADC, Irqs, adc::Config::default());
     log::info!("System initialized.");
@@ -61,9 +64,10 @@ async fn main(spawner: Spawner) {
     );
     log::info!("USB devices initialized.");
 
-    log::info!("Initializing LED...");
-    spawner
-        .spawn(led_task(LedConfig {
+    log::info!("Initializing Core 1...");
+    start_core1(p.CORE1, |spawner| {
+        log::info!("Initializing LED...");
+        spawner.must_spawn(led_task(LedConfig {
             pins: LedPinout {
                 button_1: p.PIN_8,
                 button_2: p.PIN_9,
@@ -73,10 +77,27 @@ async fn main(spawner: Spawner) {
                 fx_2: p.PIN_13,
                 start: p.PIN_14,
             },
-        }))
-        .unwrap();
-    log::info!("LED initialized.");
+        }));
+        log::info!("LED initialized.");
+    });
+    log::info!("Core 1 initialized.");
 
     log::info!("System started.");
     usb_task.await;
+}
+
+fn start_core1(core1: Peri<'static, CORE1>, f: impl FnOnce(Spawner) + 'static + Send) {
+    static EXECUTOR1: StaticCell<Executor> = StaticCell::new();
+
+    embassy_rp::multicore::spawn_core1(
+        core1,
+        unsafe {
+            static mut CORE1_STACK: Stack<4096> = Stack::new();
+            &mut *(&raw mut CORE1_STACK)
+        },
+        move || {
+            let executor1 = EXECUTOR1.init(Executor::new());
+            executor1.run(f);
+        },
+    );
 }
