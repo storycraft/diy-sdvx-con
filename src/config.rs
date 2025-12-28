@@ -1,6 +1,6 @@
 use usbd_hid::descriptor::SerializedDescriptor;
 
-use crate::usb::hid::GamepadInputReport;
+use crate::usb::hid::{GamepadInputReport, QmkRawHidReport};
 
 pub const USB_CONFIG: embassy_usb::Config = usb_config();
 
@@ -24,5 +24,14 @@ pub fn usb_gamepad_config<'a>() -> embassy_usb::class::hid::Config<'a> {
         request_handler: None,
         poll_ms: 1,
         max_packet_size: 64,
+    }
+}
+
+pub fn usb_via_config<'a>() -> embassy_usb::class::hid::Config<'a> {
+    embassy_usb::class::hid::Config {
+        report_descriptor: QmkRawHidReport::desc(),
+        request_handler: None,
+        poll_ms: 250,
+        max_packet_size: 32,
     }
 }

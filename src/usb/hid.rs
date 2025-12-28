@@ -66,3 +66,50 @@ impl Serialize for GamepadInputReport {
 }
 
 impl AsInputReport for GamepadInputReport {}
+
+/// Raw HID report compatible with QMK Raw HID.
+#[repr(C, packed)]
+pub struct QmkRawHidReport {
+    pub data: [u8; 32],
+}
+
+impl SerializedDescriptor for QmkRawHidReport {
+    #[rustfmt::skip]
+    /// HID Descriptor copied from
+    /// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/tmk_core/protocol/vusb/vusb.c#L752
+    fn desc() -> &'static [u8] {
+        &[
+            0x06, 0x60, 0xFF, // Usage Page (0xFF60 Vendor Defined)
+            0x09, 0x61,       // Usage (0x61 Vendor Defined)
+            0xA1, 0x01,       // Collection (Application)
+            // Data to host
+            0x09, 0x62,            //   Usage (Vendor Defined)
+            0x15, 0x00,            //   Logical Minimum (0)
+            0x26, 0xFF, 0x00,      //   Logical Maximum (255)
+            0x95, 32,              //   Report Count
+            0x75, 0x08,            //   Report Size (8)
+            0x81, 0x02,            //   Input (Data, Variable, Absolute)
+            // Data from host
+            0x09, 0x63,            //   Usage (Vendor Defined)
+            0x15, 0x00,            //   Logical Minimum (0)
+            0x26, 0xFF, 0x00,      //   Logical Maximum (255)
+            0x95, 32,              //   Report Count
+            0x75, 0x08,            //   Report Size (8)
+            0x91, 0x02,            //   Output (Data, Variable, Absolute)
+            0xC0                   // End Collection
+        ]
+    }
+}
+
+impl Serialize for QmkRawHidReport {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut s = serializer.serialize_tuple(32)?;
+        s.serialize_element(&self.data)?;
+        s.end()
+    }
+}
+
+impl AsInputReport for QmkRawHidReport {}

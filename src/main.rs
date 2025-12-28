@@ -7,6 +7,7 @@ mod led;
 mod logger;
 mod storage;
 mod usb;
+mod via;
 
 use crate::{
     input::{InputConfig, InputPinout},

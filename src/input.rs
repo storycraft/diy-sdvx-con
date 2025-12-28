@@ -165,7 +165,7 @@ pub fn input_task<'a, D: Driver<'a>>(
                 .await
             {
                 Ok(()) => {}
-                Err(e) => log::error!("Failed to send report: {:?}", e),
+                Err(e) => log::error!("Failed to send input report: {:?}", e),
             };
 
             last_state = state;
