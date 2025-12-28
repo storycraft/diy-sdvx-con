@@ -14,6 +14,12 @@ pub fn logger_task<'a, D: Driver<'a>>(
         use core::fmt::Write;
 
         let level = record.level().as_str();
-        write!(writer, "{} [{level}] {}\r\n", embassy_time::Instant::now(), record.args()).unwrap();
+        write!(
+            writer,
+            "{} [{level}] {}\r\n",
+            embassy_time::Instant::now(),
+            record.args()
+        )
+        .unwrap();
     })
 }

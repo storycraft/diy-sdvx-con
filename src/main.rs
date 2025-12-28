@@ -56,8 +56,8 @@ async fn main(_spawner: Spawner) {
 
                 start: p.PIN_6,
 
-                knob_left: p.PIN_26,
-                knob_right: p.PIN_27,
+                left_knob: p.PIN_26,
+                right_knob: p.PIN_27,
             },
         },
         driver,
