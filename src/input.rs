@@ -208,7 +208,7 @@ fn input_report(last_state: &InputState, state: &InputState) -> GamepadInputRepo
 
 #[inline]
 fn knob_delta(last: u8, now: u8) -> i16 {
-    let d = last as i16 - now as i16;
+    let d = now as i16 - last as i16;
 
     if d > 127 {
         d - 256
