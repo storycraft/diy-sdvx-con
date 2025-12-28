@@ -93,7 +93,7 @@ fn start_core1(core1: Peri<'static, CORE1>, f: impl FnOnce(Spawner) + 'static + 
         core1,
         unsafe {
             static mut CORE1_STACK: Stack<4096> = Stack::new();
-            &mut CORE1_STACK
+            (&raw mut CORE1_STACK).as_mut().unwrap()
         },
         move || {
             let executor1 = EXECUTOR1.init(Executor::new());

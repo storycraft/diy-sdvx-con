@@ -112,7 +112,7 @@ pub fn input_task<'a, D: Driver<'a>>(
 ) -> impl Future<Output = ()> + use<'a, D> {
     let mut writer = HidWriter::<_, 8>::new(builder, state, config::usb_gamepad_config());
 
-    let mut buttons = InputButtons {
+    let buttons = InputButtons {
         button_1: button(cfg.pins.button_1),
         button_2: button(cfg.pins.button_2),
         button_3: button(cfg.pins.button_3),
