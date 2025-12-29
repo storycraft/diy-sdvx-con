@@ -68,7 +68,7 @@ async fn read_via_cmd(data: &mut [u8]) {
     let id = data[0];
     match id {
         ViaCmdId::GET_PROTOCOL_VERSION => {
-            let ver = VIA_PROTOCOL_VERSION.to_le_bytes();
+            let ver = VIA_PROTOCOL_VERSION.to_be_bytes();
             data[1] = ver[0];
             data[2] = ver[1];
         }

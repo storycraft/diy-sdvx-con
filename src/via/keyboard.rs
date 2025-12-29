@@ -30,7 +30,7 @@ pub async fn read_via_keyboard_value(data: &mut [u8]) {
         }
 
         ViaKeyboardValueId::FIRMWARE_VERSION => {
-            let ver = VIA_FIRMWARE_VERSION.to_le_bytes();
+            let ver = VIA_FIRMWARE_VERSION.to_be_bytes();
             data[2] = ver[0];
             data[3] = ver[1];
             data[4] = ver[2];
