@@ -7,6 +7,7 @@ use embassy_usb::{
     driver::Driver,
 };
 use num_traits::FromPrimitive;
+use zerocopy::IntoBytes;
 
 use crate::{
     keycode::Keycode,
@@ -15,7 +16,7 @@ use crate::{
     via::{
         custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
         keyboard::read_via_keyboard_value,
-        keymap::{get_keymap_keycode, set_keymap_keycode},
+        keymap::{apply_keymap_buffer, get_keymap_keycode, keymap_buffer, set_keymap_keycode},
     },
 };
 
@@ -147,9 +148,29 @@ async fn read_via_cmd(data: &mut [u8]) {
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {
-            let _layer = data[1];
-            let _row = data[2];
-            let _col = data[3];
+            let offset = (data[1] as u16) << 8 | data[2] as u16;
+            let size = data[3];
+
+            let keymap_buf = userdata::get(|userdata| keymap_buffer(&userdata.keymap));
+            let byte_buf = keymap_buf.as_bytes();
+            for i in 0..size as usize {
+                let p = offset as usize + i;
+                data[4 + i] = byte_buf[byte_buf.len() - 1 - p];
+            }
+        }
+
+        ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
+            let offset = (data[1] as u16) << 8 | data[2] as u16;
+            let size = data[3];
+            
+            let mut keymap_buf = userdata::get(|userdata| keymap_buffer(&userdata.keymap));
+            let byte_buf = keymap_buf.as_mut_bytes();
+            for i in 0..size as usize {
+                let p = offset as usize + i;
+                byte_buf[byte_buf.len() - 1 - p] = data[4 + i];
+            }
+
+            userdata::update(|userdata| apply_keymap_buffer(&mut userdata.keymap, &mut keymap_buf));
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
