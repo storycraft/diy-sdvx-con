@@ -34,18 +34,28 @@ bind_interrupts!(struct Irqs {
 
 #[embassy_executor::main]
 async fn main(spawner: Spawner) {
+    // Boot Phase
     let p = embassy_rp::init(Default::default());
+    log::info!("System booted.");
+
+    // System initialization phase
+    log::info!("Initializing USB driver...");
+    let driver = UsbDriver::new(p.USB, Irqs);
+    log::info!("USB driver initialized.");
+
+    log::info!("Initializing Adc...");
     let adc = Adc::new(p.ADC, Irqs, adc::Config::default());
-    log::info!("System initialized.");
+    log::info!("Adc initialized.");
 
     log::info!("Initializing userdata...");
     let userdata_task = init_userdata(p.FLASH, p.DMA_CH1).await;
     spawner.must_spawn(userdata_task);
     log::info!("Userdata initialized.");
 
-    log::info!("Initializing USB driver...");
-    let driver = UsbDriver::new(p.USB, Irqs);
-    log::info!("USB driver initialized.");
+    log::info!("System initialized.");
+
+    // Controller initialization phase
+    log::info!("Initializing Controller...");
 
     log::info!("Initializing Core 1...");
     start_core1(p.CORE1, |spawner| {
@@ -65,7 +75,7 @@ async fn main(spawner: Spawner) {
     });
     log::info!("Core 1 initialized.");
 
-    log::info!("System started.");
+    log::info!("Controller started.");
     usb_task(
         InputConfig {
             adc,
