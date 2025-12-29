@@ -1,52 +1,6 @@
-pub mod io;
+mod io;
 
 use core::convert::Infallible;
-
-use embassy_rp::flash::FLASH_BASE;
-
-#[inline(always)]
-/// Start address of USERDATA memory
-fn userdata_start() -> usize {
-    unsafe extern "C" {
-        // Linker defined symbol
-        static __userdata_start: u8;
-    }
-
-    &raw const __userdata_start as usize
-}
-
-#[inline]
-/// Offset to start of USERDATA memory relative to FLASH memory
-fn userdata_start_offset() -> usize {
-    userdata_start() - FLASH_BASE as usize
-}
-
-#[inline(always)]
-/// Size of USERDATA memory
-fn userdata_size() -> usize {
-    unsafe extern "C" {
-        // Linker defined symbol
-        static __userdata_size: u8;
-    }
-
-    &raw const __userdata_size as usize
-}
-
-mod layout {
-    use crate::userdata::*;
-
-    #[repr(C, align(4))]
-    struct Aligned<T>(T);
-
-    #[repr(C)]
-    /// Layout reprentation in USERDATA flash
-    pub struct UserdataLayout {
-        pub signature: Aligned<Signature>,
-        pub userdata: Aligned<UserData>,
-        pub _end: Infallible,
-    }
-}
-use layout::UserdataLayout;
 use zerocopy::{FromBytes, Immutable, IntoBytes, TryFromBytes};
 
 /// Magic number for identifying if [`UserData`] in flash is valid or not.
@@ -65,7 +19,7 @@ impl Signature {
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
-pub struct UserData {
+pub struct Userdata {
     pub input_mode: InputMode,
 }
 

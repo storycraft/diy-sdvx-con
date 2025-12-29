@@ -3,12 +3,56 @@ use core::mem::offset_of;
 use embassy_rp::{
     Peri,
     dma::Channel,
-    flash::{self, Async, Flash},
+    flash::{self, Async, FLASH_BASE, Flash},
     peripherals::FLASH,
 };
 use zerocopy::{FromZeros, IntoBytes, TryFromBytes};
 
-use crate::userdata::{Signature, UserData, UserdataLayout, userdata_start_offset};
+use crate::userdata::{Signature, Userdata};
+
+#[inline(always)]
+/// Start address of USERDATA memory
+fn userdata_start() -> usize {
+    unsafe extern "C" {
+        // Linker defined symbol
+        static __userdata_start: u8;
+    }
+
+    &raw const __userdata_start as usize
+}
+
+#[inline]
+/// Offset to start of USERDATA memory relative to FLASH memory
+fn userdata_start_offset() -> usize {
+    userdata_start() - FLASH_BASE as usize
+}
+
+#[inline(always)]
+/// Size of USERDATA memory
+fn userdata_size() -> usize {
+    unsafe extern "C" {
+        // Linker defined symbol
+        static __userdata_size: u8;
+    }
+
+    &raw const __userdata_size as usize
+}
+
+mod layout {
+    use crate::userdata::*;
+
+    #[repr(C, align(4))]
+    struct Aligned<T>(T);
+
+    #[repr(C)]
+    /// Layout reprentation in USERDATA flash
+    pub struct UserdataLayout {
+        pub signature: Aligned<Signature>,
+        pub userdata: Aligned<Userdata>,
+        pub _end: Infallible,
+    }
+}
+use layout::UserdataLayout;
 
 pub struct UserdataIo<'a> {
     flash: Flash<'a, FLASH, Async, { 2 * 1024 * 1024 }>,
@@ -35,7 +79,7 @@ impl<'a> UserdataIo<'a> {
     }
 
     /// Perform initialization.
-    pub async fn init(&mut self) -> Result<UserData, flash::Error> {
+    pub async fn init(&mut self) -> Result<Userdata, flash::Error> {
         if !self.is_valid().await? {
             return self.reset();
         }
@@ -48,8 +92,8 @@ impl<'a> UserdataIo<'a> {
     }
 
     /// Reset [`UserData`] and rewrite signature
-    pub fn reset(&mut self) -> Result<UserData, flash::Error> {
-        let userdata = UserData::default();
+    pub fn reset(&mut self) -> Result<Userdata, flash::Error> {
+        let userdata = Userdata::default();
         // Save userdata first
         self.flash.blocking_write(
             userdata_offset(offset_of!(UserdataLayout, userdata)),
@@ -65,8 +109,8 @@ impl<'a> UserdataIo<'a> {
         Ok(userdata)
     }
 
-    pub async fn read(&mut self) -> Result<UserData, flash::Error> {
-        let mut buf = [0_u8; { size_of::<UserData>() }];
+    pub async fn read(&mut self) -> Result<Userdata, flash::Error> {
+        let mut buf = [0_u8; { size_of::<Userdata>() }];
         self.flash
             .read(
                 userdata_offset(offset_of!(UserdataLayout, userdata)),
@@ -74,13 +118,13 @@ impl<'a> UserdataIo<'a> {
             )
             .await?;
 
-        Ok(UserData::try_read_from_bytes(&buf).unwrap())
+        Ok(Userdata::try_read_from_bytes(&buf).unwrap())
     }
 
     /// Save [`UserData`].
     /// In case of poweroff, the data may become invalid.
     /// Invalid data will be checked on startup and will be resetted.
-    pub fn save(&mut self, data: &UserData) -> Result<(), flash::Error> {
+    pub fn save(&mut self, data: &Userdata) -> Result<(), flash::Error> {
         self.flash.blocking_write(
             userdata_offset(offset_of!(UserdataLayout, userdata)),
             data.as_bytes(),
