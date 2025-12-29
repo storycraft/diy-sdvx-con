@@ -6,6 +6,8 @@ use embassy_rp::{
     Peri,
     peripherals::{DMA_CH1, FLASH},
 };
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::{Receiver, Watch}};
+use embassy_time::Timer;
 use zerocopy::{FromBytes, Immutable, IntoBytes, TryFromBytes};
 
 use crate::userdata::io::UserdataIo;
@@ -26,6 +28,12 @@ pub struct Userdata {
     pub input_mode: InputMode,
 }
 
+impl Userdata {
+    pub const DEFAULT: Self = Self {
+        input_mode: InputMode::DEFAULT,
+    };
+}
+
 #[derive(Clone, Copy, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 #[repr(u8)]
 pub enum InputMode {
@@ -34,6 +42,24 @@ pub enum InputMode {
     Gamepad,
     /// Controller uses configurable hid input
     Keyboard,
+}
+
+impl InputMode {
+    pub const DEFAULT: Self = InputMode::Gamepad;
+}
+
+static CURRENT: Watch<CriticalSectionRawMutex, Userdata, 5> = Watch::new_with(Userdata::DEFAULT);
+
+pub fn get() -> Userdata {
+    CURRENT.try_get().unwrap()
+}
+
+pub fn save(userdata: Userdata) {
+    CURRENT.sender().send(userdata);
+}
+
+pub fn listener() -> Receiver<'static, CriticalSectionRawMutex, Userdata, 5> {
+    CURRENT.receiver().unwrap()
 }
 
 pub async fn init_userdata(
@@ -49,8 +75,29 @@ pub async fn init_userdata(
             Userdata::default()
         }
     };
-    userdata_task(io, userdata)
+    save(userdata);
+
+    userdata_task(io)
 }
 
 #[embassy_executor::task]
-async fn userdata_task(io: UserdataIo<'static>, mut userdata: Userdata) {}
+async fn userdata_task(mut io: UserdataIo<'static>) {
+    let mut receiver = CURRENT.receiver().unwrap();
+
+    loop {
+        let userdata = receiver.changed().await;
+
+        match io.save(&userdata).await {
+            Ok(_) => {
+                log::info!("Userdata saved.");
+            }
+
+            Err(e) => {
+                log::error!("Failed to save userdata. error: {e:?}");
+            }
+        }
+
+        // Debouncing timer
+        Timer::after_secs(5).await;
+    }
+}
