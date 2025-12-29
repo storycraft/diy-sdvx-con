@@ -6,7 +6,11 @@ use embassy_rp::{
     Peri,
     peripherals::{DMA_CH1, FLASH},
 };
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, watch::{Receiver, Watch}};
+use embassy_sync::{
+    blocking_mutex::raw::CriticalSectionRawMutex,
+    signal::Signal,
+    watch::{Receiver, Watch},
+};
 use embassy_time::Timer;
 use zerocopy::{FromBytes, Immutable, IntoBytes, TryFromBytes};
 
@@ -48,18 +52,28 @@ impl InputMode {
     pub const DEFAULT: Self = InputMode::Gamepad;
 }
 
-static CURRENT: Watch<CriticalSectionRawMutex, Userdata, 5> = Watch::new_with(Userdata::DEFAULT);
+static CURRENT: Watch<CriticalSectionRawMutex, Userdata, 4> = Watch::new_with(Userdata::DEFAULT);
 
+/// Get current [`Userdata`]
 pub fn get() -> Userdata {
     CURRENT.try_get().unwrap()
 }
 
-pub fn save(userdata: Userdata) {
+/// Set current [`Userdata`]
+pub fn set(userdata: Userdata) {
     CURRENT.sender().send(userdata);
 }
 
-pub fn listener() -> Receiver<'static, CriticalSectionRawMutex, Userdata, 5> {
+/// Listen for changes
+pub fn listener() -> Receiver<'static, CriticalSectionRawMutex, Userdata, 4> {
     CURRENT.receiver().unwrap()
+}
+
+static SAVE_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new();
+
+/// Request to save current [`Userdata`] to flash.
+pub fn save() {
+    SAVE_SIGNAL.signal(());
 }
 
 pub async fn init_userdata(
@@ -75,19 +89,17 @@ pub async fn init_userdata(
             Userdata::default()
         }
     };
-    save(userdata);
+    set(userdata);
 
     userdata_task(io)
 }
 
 #[embassy_executor::task]
 async fn userdata_task(mut io: UserdataIo<'static>) {
-    let mut receiver = CURRENT.receiver().unwrap();
-
     loop {
-        let userdata = receiver.changed().await;
+        SAVE_SIGNAL.wait().await;
 
-        match io.save(&userdata).await {
+        match io.save(&get()).await {
             Ok(_) => {
                 log::info!("Userdata saved.");
             }
