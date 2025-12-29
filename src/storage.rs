@@ -5,12 +5,12 @@ unsafe extern "C" {
 
 /// Start address of USERDATA memory
 #[inline(always)]
-pub fn userdata_start() -> usize {
+fn userdata_start() -> usize {
     &raw const __userdata_start as usize
 }
 
 /// Size of USERDATA memory
 #[inline(always)]
-pub fn userdata_size() -> usize {
+fn userdata_size() -> usize {
     &raw const __userdata_size as usize
 }

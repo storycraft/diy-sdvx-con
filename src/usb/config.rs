@@ -2,10 +2,10 @@ use usbd_hid::descriptor::SerializedDescriptor;
 
 use crate::usb::hid::{GamepadInputReport, QmkRawHidReport};
 
-pub const USB_CONFIG: embassy_usb::Config = usb_config();
+pub const DEVICE: embassy_usb::Config = device_config();
 
 /// USB device configuration
-const fn usb_config() -> embassy_usb::Config<'static> {
+const fn device_config() -> embassy_usb::Config<'static> {
     let mut config = embassy_usb::Config::new(0x3d5a, 0xcafe);
 
     config.manufacturer = Some("SDVX-Con");
@@ -18,7 +18,7 @@ const fn usb_config() -> embassy_usb::Config<'static> {
     config
 }
 
-pub fn usb_gamepad_config<'a>() -> embassy_usb::class::hid::Config<'a> {
+pub fn gamepad<'a>() -> embassy_usb::class::hid::Config<'a> {
     embassy_usb::class::hid::Config {
         report_descriptor: GamepadInputReport::desc(),
         request_handler: None,
@@ -27,7 +27,7 @@ pub fn usb_gamepad_config<'a>() -> embassy_usb::class::hid::Config<'a> {
     }
 }
 
-pub fn usb_via_config<'a>() -> embassy_usb::class::hid::Config<'a> {
+pub fn via<'a>() -> embassy_usb::class::hid::Config<'a> {
     embassy_usb::class::hid::Config {
         report_descriptor: QmkRawHidReport::desc(),
         request_handler: None,

@@ -13,13 +13,12 @@ use embassy_usb::{
 };
 
 use crate::{
-    config,
     input::{
         reader::{InputDriver, InputReader},
         state::{KnobState, KnobTurn},
     },
     led::{LedState, led_sender},
-    usb::hid::GamepadInputReport,
+    usb::{self, hid::GamepadInputReport},
 };
 
 pub struct InputConfig {
@@ -66,7 +65,7 @@ pub fn input_task<'a, D: Driver<'a>>(
     state: &'a mut hid::State<'a>,
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {
-    let mut writer = HidWriter::<_, 8>::new(builder, state, config::usb_gamepad_config());
+    let mut writer = HidWriter::<_, 8>::new(builder, state, usb::config::gamepad());
 
     let inputs = InputDriver {
         button_1: button(cfg.pins.button_1),

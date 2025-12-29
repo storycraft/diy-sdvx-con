@@ -7,7 +7,7 @@ use embassy_usb::{
 };
 
 use crate::{
-    config,
+    usb,
     via::{
         custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
         keyboard::read_via_keyboard_value,
@@ -18,7 +18,7 @@ pub fn via_task<'a, D: Driver<'a>>(
     state: &'a mut hid::State<'a>,
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {
-    let mut io = HidReaderWriter::<_, 32, 32>::new(builder, state, config::usb_via_config());
+    let mut io = HidReaderWriter::<_, 32, 32>::new(builder, state, usb::config::via());
     async move {
         io.ready().await;
         let (mut reader, mut writer) = io.split();

@@ -3,13 +3,17 @@ use embassy_usb::{
     driver::Driver,
 };
 
-use crate::config;
+use crate::usb;
 
 pub fn logger_task<'a, D: Driver<'a>>(
     state: &'a mut cdc_acm::State<'a>,
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {
-    let class = CdcAcmClass::new(builder, state, config::USB_CONFIG.max_packet_size_0 as u16);
+    let class = CdcAcmClass::new(
+        builder,
+        state,
+        usb::config::DEVICE.max_packet_size_0 as u16,
+    );
     embassy_usb_logger::with_custom_style!(1024, log::LevelFilter::Info, class, |record, writer| {
         use core::fmt::Write;
 
