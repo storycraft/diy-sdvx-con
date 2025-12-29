@@ -28,7 +28,7 @@ impl Signature {
     pub const CURRENT: Self = Signature(0x26d67ba0);
 }
 
-#[derive(Clone, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
+#[derive(Clone, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 pub struct Userdata {
     pub input_mode: InputMode,
 }
@@ -39,11 +39,16 @@ impl Userdata {
     };
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
+impl Default for Userdata {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 #[repr(u8)]
 pub enum InputMode {
     /// Controller uses fixed Gamepad input
-    #[default]
     Gamepad = 0,
     /// Controller uses configurable hid input
     Keyboard = 1,
@@ -62,6 +67,12 @@ impl InputMode {
             1 => Some(InputMode::Keyboard),
             _ => None,
         }
+    }
+}
+
+impl Default for InputMode {
+    fn default() -> Self {
+        Self::DEFAULT
     }
 }
 
