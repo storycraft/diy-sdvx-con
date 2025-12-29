@@ -1,7 +1,7 @@
 use embassy_rp::{
     Peri,
     dma::Channel,
-    flash::{self, Async, FLASH_BASE, Flash},
+    flash::{self, Async, ERASE_SIZE, FLASH_BASE, Flash},
     peripherals::FLASH,
 };
 use zerocopy::{IntoBytes, TryFromBytes};
@@ -66,6 +66,10 @@ impl<'a> UserdataIo<'a> {
     pub async fn save(&mut self, data: &Userdata) -> Result<(), flash::Error> {
         // Write only if changed
         if self.read().await.is_none_or(|read| read.ne(data)) {
+            self.flash.blocking_erase(
+                userdata_start_offset() as _,
+                userdata_start_offset() as u32 + ERASE_SIZE as u32,
+            )?;
             self.flash
                 .blocking_write(userdata_start_offset() as _, data.as_bytes())?;
         }
