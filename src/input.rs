@@ -33,13 +33,13 @@ pub struct InputConfig {
 }
 
 pub struct InputPinout {
-    pub button_1: Peri<'static, PIN_0>,
-    pub button_2: Peri<'static, PIN_1>,
-    pub button_3: Peri<'static, PIN_2>,
-    pub button_4: Peri<'static, PIN_3>,
+    pub button1: Peri<'static, PIN_0>,
+    pub button2: Peri<'static, PIN_1>,
+    pub button3: Peri<'static, PIN_2>,
+    pub button4: Peri<'static, PIN_3>,
 
-    pub fx_1: Peri<'static, PIN_4>,
-    pub fx_2: Peri<'static, PIN_5>,
+    pub fx1: Peri<'static, PIN_4>,
+    pub fx2: Peri<'static, PIN_5>,
 
     pub start: Peri<'static, PIN_6>,
 
@@ -49,12 +49,12 @@ pub struct InputPinout {
 
 #[derive(Clone, Copy)]
 struct ControllerInput {
-    pub button_1: Level,
-    pub button_2: Level,
-    pub button_3: Level,
-    pub button_4: Level,
-    pub fx_1: Level,
-    pub fx_2: Level,
+    pub button1: Level,
+    pub button2: Level,
+    pub button3: Level,
+    pub button4: Level,
+    pub fx1: Level,
+    pub fx2: Level,
     pub start: Level,
     pub left_knob: KnobTurn,
     pub right_knob: KnobTurn,
@@ -68,12 +68,12 @@ pub fn input_task<'a, D: Driver<'a>>(
     let mut writer = HidWriter::<_, 8>::new(builder, state, usb::config::gamepad());
 
     let inputs = InputDriver {
-        button_1: button(cfg.pins.button_1),
-        button_2: button(cfg.pins.button_2),
-        button_3: button(cfg.pins.button_3),
-        button_4: button(cfg.pins.button_4),
-        fx_1: button(cfg.pins.fx_1),
-        fx_2: button(cfg.pins.fx_2),
+        button1: button(cfg.pins.button1),
+        button2: button(cfg.pins.button2),
+        button3: button(cfg.pins.button3),
+        button4: button(cfg.pins.button4),
+        fx1: button(cfg.pins.fx1),
+        fx2: button(cfg.pins.fx2),
         start: button(cfg.pins.start),
         knobs: [
             adc::Channel::new_pin(cfg.pins.left_knob, Pull::None),
@@ -92,22 +92,22 @@ pub fn input_task<'a, D: Driver<'a>>(
 
         loop {
             led_sender.send(LedState {
-                button_1: state.button_1,
-                button_2: state.button_2,
-                button_3: state.button_3,
-                button_4: state.button_4,
-                fx_1: state.fx_1,
-                fx_2: state.fx_2,
+                button_1: state.button1,
+                button_2: state.button2,
+                button_3: state.button3,
+                button_4: state.button4,
+                fx_1: state.fx1,
+                fx_2: state.fx2,
                 start: state.start,
             });
 
             let input = ControllerInput {
-                button_1: state.button_1,
-                button_2: state.button_2,
-                button_3: state.button_3,
-                button_4: state.button_4,
-                fx_1: state.fx_1,
-                fx_2: state.fx_2,
+                button1: state.button1,
+                button2: state.button2,
+                button3: state.button3,
+                button4: state.button4,
+                fx1: state.fx1,
+                fx2: state.fx2,
                 start: state.start,
                 left_knob: left_knob_state.update(state.left_knob),
                 right_knob: right_knob_state.update(state.right_knob),
@@ -125,16 +125,16 @@ pub fn input_task<'a, D: Driver<'a>>(
 
 #[inline(always)]
 fn input_report(input: ControllerInput) -> GamepadInputReport {
-    let buttons: u16 = ((input.button_1 == Level::High) as u16) << 6 // A Button (Button 7)
-                | ((input.button_2 == Level::High) as u16) << 4 // B Button (Button 5)
-                | ((input.button_3 == Level::High) as u16) << 5 // C Button (Button 6)
-                | ((input.button_4 == Level::High) as u16) << 7 // D Button (Button 8)
-                | ((input.fx_2 == Level::High) as u16) << 1 // FX Right (Button 2)
+    let buttons: u16 = ((input.button1 == Level::High) as u16) << 6 // A Button (Button 7)
+                | ((input.button2 == Level::High) as u16) << 4 // B Button (Button 5)
+                | ((input.button3 == Level::High) as u16) << 5 // C Button (Button 6)
+                | ((input.button4 == Level::High) as u16) << 7 // D Button (Button 8)
+                | ((input.fx2 == Level::High) as u16) << 1 // FX Right (Button 2)
                 | ((input.start == Level::High) as u16) << 9 // Start (Button 10)
                 | ((input.right_knob == KnobTurn::Left) as u16) // Right knob left turn (Button 1)
                 | ((input.right_knob == KnobTurn::Right) as u16) << 2; // Right knob right turn (Button 3)
 
-    let dpad = if input.fx_1 == Level::High {
+    let dpad = if input.fx1 == Level::High {
         // FX Left (Dpad down) + Left knob turns
         5 - (input.left_knob == KnobTurn::Left) as u8 + (input.left_knob == KnobTurn::Right) as u8
     } else if input.left_knob == KnobTurn::Left {

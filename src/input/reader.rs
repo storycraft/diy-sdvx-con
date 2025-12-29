@@ -29,13 +29,13 @@ impl<'a> InputReader<'a> {
     }
 
     pub async fn read(&mut self) -> InputRead {
-        let button_1 = self.inputs.button_1.get_level();
-        let button_2 = self.inputs.button_2.get_level();
-        let button_3 = self.inputs.button_3.get_level();
-        let button_4 = self.inputs.button_4.get_level();
+        let button1 = self.inputs.button1.get_level();
+        let button2 = self.inputs.button2.get_level();
+        let button3 = self.inputs.button3.get_level();
+        let button4 = self.inputs.button4.get_level();
 
-        let fx_1 = self.inputs.fx_1.get_level();
-        let fx_2 = self.inputs.fx_2.get_level();
+        let fx1 = self.inputs.fx1.get_level();
+        let fx2 = self.inputs.fx2.get_level();
 
         let start = self.inputs.start.get_level();
 
@@ -48,12 +48,12 @@ impl<'a> InputReader<'a> {
         .await;
 
         InputRead {
-            button_1,
-            button_2,
-            button_3,
-            button_4,
-            fx_1,
-            fx_2,
+            button1,
+            button2,
+            button3,
+            button4,
+            fx1,
+            fx2,
             start,
             left_knob,
             right_knob,
@@ -62,13 +62,13 @@ impl<'a> InputReader<'a> {
 }
 
 pub struct InputDriver<'a> {
-    pub button_1: Input<'a>,
-    pub button_2: Input<'a>,
-    pub button_3: Input<'a>,
-    pub button_4: Input<'a>,
+    pub button1: Input<'a>,
+    pub button2: Input<'a>,
+    pub button3: Input<'a>,
+    pub button4: Input<'a>,
 
-    pub fx_1: Input<'a>,
-    pub fx_2: Input<'a>,
+    pub fx1: Input<'a>,
+    pub fx2: Input<'a>,
 
     pub start: Input<'a>,
 
@@ -77,13 +77,13 @@ pub struct InputDriver<'a> {
 
 #[derive(Clone, Copy)]
 pub struct InputRead {
-    pub button_1: Level,
-    pub button_2: Level,
-    pub button_3: Level,
-    pub button_4: Level,
+    pub button1: Level,
+    pub button2: Level,
+    pub button3: Level,
+    pub button4: Level,
 
-    pub fx_1: Level,
-    pub fx_2: Level,
+    pub fx1: Level,
+    pub fx2: Level,
 
     pub start: Level,
 

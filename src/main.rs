@@ -88,13 +88,13 @@ async fn main(spawner: Spawner) {
             adc,
             dma: p.DMA_CH0,
             pins: InputPinout {
-                button_1: p.PIN_0,
-                button_2: p.PIN_1,
-                button_3: p.PIN_2,
-                button_4: p.PIN_3,
+                button1: p.PIN_0,
+                button2: p.PIN_1,
+                button3: p.PIN_2,
+                button4: p.PIN_3,
 
-                fx_1: p.PIN_4,
-                fx_2: p.PIN_5,
+                fx1: p.PIN_4,
+                fx2: p.PIN_5,
 
                 start: p.PIN_6,
 
