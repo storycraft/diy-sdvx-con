@@ -26,7 +26,7 @@ pub async fn read_custom_get_value(data: &mut [u8]) {
     let value_id = data[2];
     match value_id {
         ValueId::CONTROLLER_MODE => {
-            userdata::update(|userdata| {
+            userdata::get(|userdata| {
                 data[3] = userdata.input_mode.to_num();
             });
         }
