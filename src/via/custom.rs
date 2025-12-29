@@ -1,6 +1,6 @@
 use embassy_rp::rom_data;
 
-use crate::via::ViaCmdId;
+use crate::{userdata, via::ViaCmdId};
 
 struct ValueId;
 impl ValueId {
@@ -74,4 +74,6 @@ pub async fn read_custom_save(data: &mut [u8]) {
     if channel_id != 0 {
         data[0] = ViaCmdId::UNHANDLED;
     }
+
+    userdata::save();
 }
