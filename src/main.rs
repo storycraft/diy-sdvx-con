@@ -4,14 +4,14 @@
 mod input;
 mod led;
 mod logger;
-mod userdata;
 mod usb;
+mod userdata;
 mod via;
 
 use crate::{
     input::{InputConfig, InputPinout},
     led::{LedConfig, LedPinout, led_task},
-    usb::usb_task,
+    usb::usb_task, userdata::init_userdata,
 };
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::{
@@ -32,10 +32,15 @@ bind_interrupts!(struct Irqs {
 });
 
 #[embassy_executor::main]
-async fn main(_spawner: Spawner) {
+async fn main(spawner: Spawner) {
     let p = embassy_rp::init(Default::default());
     let adc = Adc::new(p.ADC, Irqs, adc::Config::default());
     log::info!("System initialized.");
+
+    log::info!("Initializing userdata...");
+    let userdata_task = init_userdata(p.FLASH, p.DMA_CH1).await;
+    spawner.must_spawn(userdata_task);
+    log::info!("Userdata initialized.");
 
     log::info!("Initializing USB driver...");
     let driver = UsbDriver::new(p.USB, Irqs);
