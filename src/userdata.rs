@@ -1,6 +1,6 @@
 mod io;
 
-use core::{cell::RefCell, convert::Infallible};
+use core::cell::RefCell;
 use embassy_executor::SpawnToken;
 use embassy_rp::{
     Peri,
@@ -13,28 +13,29 @@ use embassy_sync::{
 };
 use embassy_time::Timer;
 use scopeguard::defer;
-use zerocopy::{FromBytes, Immutable, IntoBytes, TryFromBytes};
+use zerocopy::{Immutable, IntoBytes, TryFromBytes};
 
 use crate::userdata::io::UserdataIo;
 
 /// Magic number for identifying if [`UserData`] in flash is valid or not.
-#[derive(Clone, Copy, PartialEq, Eq, FromBytes, IntoBytes, Immutable)]
-#[repr(transparent)]
-struct Signature(u32);
-
-impl Signature {
+#[derive(Clone, Copy, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
+#[repr(u32)]
+pub enum Signature {
     /// Current signature.
     /// Change on every [`UserData`] changes.
-    pub const CURRENT: Self = Signature(0x26d67ba0);
+    Current = 0x26d67ba0,
 }
 
 #[derive(Clone, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
+#[repr(C)]
 pub struct Userdata {
+    pub signature: Signature,
     pub input_mode: InputMode,
 }
 
 impl Userdata {
     pub const DEFAULT: Self = Self {
+        signature: Signature::Current,
         input_mode: InputMode::DEFAULT,
     };
 }
@@ -46,7 +47,7 @@ impl Default for Userdata {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
-#[repr(u8)]
+#[repr(u32)]
 pub enum InputMode {
     /// Controller uses fixed Gamepad input
     Gamepad = 0,
