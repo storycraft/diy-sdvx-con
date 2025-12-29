@@ -1,6 +1,9 @@
 use num_traits::FromPrimitive;
 
-use crate::{keycode::Keycode, userdata::keymap::Keymap};
+use crate::{
+    keycode::Keycode,
+    userdata::{self, keymap::Keymap},
+};
 
 /// Get key from row, col layout
 pub fn get_keymap_keycode(map: &Keymap, row: u8, col: u8) -> Option<Keycode> {
@@ -79,4 +82,36 @@ pub fn apply_keymap_buffer(map: &mut Keymap, buf: &[u16; 12]) {
     map.button1 = Keycode::from_u16(buf[7]).unwrap_or_default();
 
     map.start = Keycode::from_u16(buf[10]).unwrap_or_default();
+}
+
+pub fn get_encoder_keycode(id: u8, clockwise: bool) -> Option<Keycode> {
+    userdata::get(|data| match (id, clockwise) {
+        (1, false) => Some(data.keymap.left_knob_left),
+        (1, true) => Some(data.keymap.left_knob_right),
+
+        (2, false) => Some(data.keymap.right_knob_left),
+        (2, true) => Some(data.keymap.right_knob_right),
+
+        _ => None,
+    })
+}
+
+pub fn set_encoder_keycode(id: u8, clockwise: bool, code: Keycode) {
+    userdata::update(|data| match (id, clockwise) {
+        (1, false) => {
+            data.keymap.left_knob_left = code;
+        }
+        (1, true) => {
+            data.keymap.left_knob_right = code;
+        }
+
+        (2, false) => {
+            data.keymap.right_knob_left = code;
+        }
+        (2, true) => {
+            data.keymap.right_knob_right = code;
+        }
+
+        _ => {}
+    })
 }

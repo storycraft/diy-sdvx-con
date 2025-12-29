@@ -16,7 +16,10 @@ use crate::{
     via::{
         custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
         keyboard::read_via_keyboard_value,
-        keymap::{apply_keymap_buffer, get_keymap_keycode, keymap_buffer, set_keymap_keycode},
+        keymap::{
+            apply_keymap_buffer, get_encoder_keycode, get_keymap_keycode, keymap_buffer,
+            set_encoder_keycode, set_keymap_keycode,
+        },
     },
 };
 
@@ -162,7 +165,7 @@ async fn read_via_cmd(data: &mut [u8]) {
         ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
             let offset = (data[1] as u16) << 8 | data[2] as u16;
             let size = data[3];
-            
+
             let mut keymap_buf = userdata::get(|userdata| keymap_buffer(&userdata.keymap));
             let byte_buf = keymap_buf.as_mut_bytes();
             for i in 0..size as usize {
@@ -175,17 +178,23 @@ async fn read_via_cmd(data: &mut [u8]) {
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
             let _layer = data[1];
-            let _encoder_id = data[2];
-            let _clockwise = data[3] != 0;
-            let _keycode = (data[4] as u16) << 8 | data[5] as u16;
+            let encoder_id = data[2];
+            let clockwise = data[3] != 0;
+
+            let key = (get_encoder_keycode(encoder_id, clockwise).unwrap_or_default() as u16)
+                .to_be_bytes();
+            data[4] = key[0];
+            data[5] = key[1];
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {
-            // TODO
             let _layer = data[1];
-            let _encoder_id = data[2];
-            let _clockwise = data[3] != 0;
-            let _keycode = (data[4] as u16) << 8 | data[5] as u16;
+            let encoder_id = data[2];
+            let clockwise = data[3] != 0;
+            let keycode =
+                Keycode::from_u16((data[4] as u16) << 8 | data[5] as u16).unwrap_or_default();
+
+            set_encoder_keycode(encoder_id, clockwise, keycode);
         }
 
         _ => {
