@@ -51,9 +51,11 @@ pub async fn read_custom_set_value(data: &mut [u8]) {
     match value_id {
         ValueId::CONTROLLER_MODE => {
             // TODO
+            log::info!("Controller mode updated.");
         }
 
         ValueId::REBOOT_BOOTSEL => {
+            log::info!("BOOTSEL Reboot requested.");
             // Reboot to BOOTSEL
             rom_data::reset_to_usb_boot(0, 0);
         }

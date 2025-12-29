@@ -71,6 +71,7 @@ async fn read_via_cmd(data: &mut [u8]) {
             let ver = VIA_PROTOCOL_VERSION.to_be_bytes();
             data[1] = ver[0];
             data[2] = ver[1];
+            log::info!("Via connected.");
         }
 
         ViaCmdId::GET_KEYBOARD_VALUE => {
@@ -89,10 +90,11 @@ async fn read_via_cmd(data: &mut [u8]) {
 
         ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
             let _layer = data[1];
-            let _row = data[2];
-            let _col = data[3];
-            let _key = ((data[4] as u16) << 8) | data[5] as u16;
+            let row = data[2];
+            let col = data[3];
+            let key = ((data[4] as u16) << 8) | data[5] as u16;
             // TODO
+            log::info!("Keycode at row: {row} col: {col} updated to keycode: {key:#06X}");
         }
 
         ViaCmdId::CUSTOM_GET_VALUE => {
