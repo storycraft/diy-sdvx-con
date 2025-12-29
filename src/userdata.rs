@@ -1,4 +1,5 @@
 mod io;
+pub mod keymap;
 
 use core::cell::RefCell;
 use embassy_executor::SpawnToken;
@@ -15,7 +16,7 @@ use embassy_time::Timer;
 use scopeguard::defer;
 use zerocopy::{Immutable, IntoBytes, TryFromBytes};
 
-use crate::userdata::io::UserdataIo;
+use crate::userdata::{io::UserdataIo, keymap::Keymap};
 
 /// Magic number for identifying if [`UserData`] in flash is valid or not.
 #[derive(Clone, Copy, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
@@ -23,55 +24,24 @@ use crate::userdata::io::UserdataIo;
 pub enum Signature {
     /// Current signature.
     /// Change on every [`UserData`] changes.
-    Current = 0x26d67ba0,
+    Current = 0x26d67ba1,
 }
 
 #[derive(Clone, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 #[repr(C)]
 pub struct Userdata {
     pub signature: Signature,
-    pub input_mode: InputMode,
+    pub keymap: Keymap,
 }
 
 impl Userdata {
     pub const DEFAULT: Self = Self {
         signature: Signature::Current,
-        input_mode: InputMode::DEFAULT,
+        keymap: Keymap::DEFAULT,
     };
 }
 
 impl Default for Userdata {
-    fn default() -> Self {
-        Self::DEFAULT
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
-#[repr(u32)]
-pub enum InputMode {
-    /// Controller uses fixed Gamepad input
-    Gamepad = 0,
-    /// Controller uses configurable hid input
-    Keyboard = 1,
-}
-
-impl InputMode {
-    pub const DEFAULT: Self = InputMode::Gamepad;
-
-    pub fn to_num(self) -> u8 {
-        self as u8
-    }
-
-    pub fn from_num(v: u8) -> Option<Self> {
-        match v {
-            0 => Some(InputMode::Gamepad),
-            1 => Some(InputMode::Keyboard),
-            _ => None,
-        }
-    }
-}
-
-impl Default for InputMode {
     fn default() -> Self {
         Self::DEFAULT
     }
