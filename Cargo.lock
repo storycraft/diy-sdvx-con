@@ -645,6 +645,8 @@ dependencies = [
  "embassy-usb-logger",
  "embedded-hal 1.0.0",
  "log",
+ "num-derive",
+ "num-traits",
  "panic-halt",
  "scopeguard",
  "static_cell",
@@ -862,6 +864,17 @@ name = "new_debug_unreachable"
 version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
+
+[[package]]
+name = "num-derive"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed3955f1a9c7c0c15e092f9c887db08b1fc683305fdf6eb6684f22555355e202"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.111",
+]
 
 [[package]]
 name = "num-traits"

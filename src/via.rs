@@ -1,16 +1,21 @@
 mod custom;
 mod keyboard;
+mod keymap;
 
 use embassy_usb::{
     class::hid::{self, HidReaderWriter},
     driver::Driver,
 };
+use num_traits::FromPrimitive;
 
 use crate::{
+    keycode::Keycode,
     usb,
+    userdata::{self, keymap::Keymap},
     via::{
         custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
         keyboard::read_via_keyboard_value,
+        keymap::{get_keymap_keycode, set_keymap_keycode},
     },
 };
 
@@ -80,10 +85,12 @@ async fn read_via_cmd(data: &mut [u8]) {
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_KEYCODE => {
             let _layer = data[1];
-            let _row = data[2];
-            let _col = data[3];
+            let row = data[2];
+            let col = data[3];
 
-            let key = 0_u16.to_be_bytes();
+            let key = userdata::get(|userdata| get_keymap_keycode(&userdata.keymap, row, col))
+                .unwrap_or_default();
+            let key = (key as u16).to_be_bytes();
             data[4] = key[0];
             data[5] = key[1];
         }
@@ -92,9 +99,24 @@ async fn read_via_cmd(data: &mut [u8]) {
             let _layer = data[1];
             let row = data[2];
             let col = data[3];
-            let key = ((data[4] as u16) << 8) | data[5] as u16;
-            // TODO
-            log::info!("Keycode at row: {row} col: {col} updated to keycode: {key:#06X}");
+            let key =
+                Keycode::from_u16(((data[4] as u16) << 8) | data[5] as u16).unwrap_or_default();
+
+            userdata::update(|userdata| {
+                set_keymap_keycode(&mut userdata.keymap, row, col, key);
+            });
+            userdata::save();
+            log::info!(
+                "Keycode at row: {row} col: {col} updated to key: {:#06X}",
+                key as u16
+            );
+        }
+
+        ViaCmdId::DYNAMIC_KEYMAP_RESET => {
+            userdata::update(|userdata| {
+                userdata.keymap = Keymap::DEFAULT;
+            });
+            log::info!("Keymap resetted to default.");
         }
 
         ViaCmdId::CUSTOM_GET_VALUE => {

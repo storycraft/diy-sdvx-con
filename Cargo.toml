@@ -46,6 +46,8 @@ usbd-hid = { version = "0.8.2", features = ["defmt"] }
 static_cell = "2.1.1"
 zerocopy = { version = "0.8.31", features = ["derive"] }
 scopeguard = { version = "1.2.0", default-features = false }
+num-traits = { version = "0.2.19", default-features = false }
+num-derive = { version = "0.4.2", default-features = false }
 
 [package.metadata.embassy]
 build = [
