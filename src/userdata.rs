@@ -1,17 +1,18 @@
 mod io;
 
-use core::convert::Infallible;
+use core::{cell::RefCell, convert::Infallible};
 use embassy_executor::SpawnToken;
 use embassy_rp::{
     Peri,
     peripherals::{DMA_CH1, FLASH},
 };
 use embassy_sync::{
-    blocking_mutex::raw::CriticalSectionRawMutex,
+    blocking_mutex::{Mutex, raw::CriticalSectionRawMutex},
     signal::Signal,
     watch::{Receiver, Watch},
 };
 use embassy_time::Timer;
+use scopeguard::defer;
 use zerocopy::{FromBytes, Immutable, IntoBytes, TryFromBytes};
 
 use crate::userdata::io::UserdataIo;
@@ -43,30 +44,47 @@ impl Userdata {
 pub enum InputMode {
     /// Controller uses fixed Gamepad input
     #[default]
-    Gamepad,
+    Gamepad = 0,
     /// Controller uses configurable hid input
-    Keyboard,
+    Keyboard = 1,
 }
 
 impl InputMode {
     pub const DEFAULT: Self = InputMode::Gamepad;
+
+    pub fn to_num(self) -> u8 {
+        self as u8
+    }
+
+    pub fn from_num(v: u8) -> Option<Self> {
+        match v {
+            0 => Some(InputMode::Gamepad),
+            1 => Some(InputMode::Keyboard),
+            _ => None,
+        }
+    }
 }
 
-static CURRENT: Watch<CriticalSectionRawMutex, Userdata, 4> = Watch::new_with(Userdata::DEFAULT);
+static CURRENT: Mutex<CriticalSectionRawMutex, RefCell<Userdata>> =
+    Mutex::new(RefCell::new(Userdata::DEFAULT));
+static WATCH: Watch<CriticalSectionRawMutex, (), 4> = Watch::new();
 
+#[inline]
 /// Get current [`Userdata`]
-pub fn get() -> Userdata {
-    CURRENT.try_get().unwrap()
+pub fn get<R>(f: impl FnOnce(&Userdata) -> R) -> R {
+    CURRENT.lock(|cell| f(&cell.borrow()))
 }
 
-/// Set current [`Userdata`]
-pub fn set(userdata: Userdata) {
-    CURRENT.sender().send(userdata);
+#[inline]
+/// Update current [`Userdata`]
+pub fn update<R>(f: impl FnOnce(&mut Userdata) -> R) -> R {
+    defer!(WATCH.sender().send(()));
+    CURRENT.lock(|cell| f(&mut cell.borrow_mut()))
 }
 
 /// Listen for changes
-pub fn listener() -> Receiver<'static, CriticalSectionRawMutex, Userdata, 4> {
-    CURRENT.receiver().unwrap()
+pub fn listener() -> Receiver<'static, CriticalSectionRawMutex, (), 4> {
+    WATCH.receiver().unwrap()
 }
 
 static SAVE_SIGNAL: Signal<CriticalSectionRawMutex, ()> = Signal::new();
@@ -89,7 +107,9 @@ pub async fn init_userdata(
             Userdata::default()
         }
     };
-    set(userdata);
+    CURRENT.lock(|cell| {
+        *cell.borrow_mut() = userdata;
+    });
 
     userdata_task(io)
 }
@@ -99,7 +119,7 @@ async fn userdata_task(mut io: UserdataIo<'static>) {
     loop {
         SAVE_SIGNAL.wait().await;
 
-        match io.save(&get()).await {
+        match io.save(&get(|userdata| *userdata)).await {
             Ok(_) => {
                 log::info!("Userdata saved.");
             }

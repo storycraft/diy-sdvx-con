@@ -1,6 +1,9 @@
 use embassy_rp::rom_data;
 
-use crate::{userdata, via::ViaCmdId};
+use crate::{
+    userdata::{self, InputMode},
+    via::ViaCmdId,
+};
 
 struct ValueId;
 impl ValueId {
@@ -23,11 +26,13 @@ pub async fn read_custom_get_value(data: &mut [u8]) {
     let value_id = data[2];
     match value_id {
         ValueId::CONTROLLER_MODE => {
-            // TODO:: 0 Gamepad, 1 Keyboard + Mouse
-            data[3] = 0;
+            userdata::update(|userdata| {
+                data[3] = userdata.input_mode.to_num();
+            });
         }
 
         ValueId::REBOOT_BOOTSEL => {
+            // Fixed value
             data[3] = 1;
         }
 
@@ -50,7 +55,15 @@ pub async fn read_custom_set_value(data: &mut [u8]) {
     let value_id = data[2];
     match value_id {
         ValueId::CONTROLLER_MODE => {
-            // TODO
+            let Some(mode) = InputMode::from_num(data[3]) else {
+                log::info!("Invalid InputMode mode: {}", data[3]);
+                data[0] = ViaCmdId::UNHANDLED;
+                return;
+            };
+
+            userdata::update(|userdata| {
+                userdata.input_mode = mode;
+            });
             log::info!("Controller mode updated.");
         }
 
