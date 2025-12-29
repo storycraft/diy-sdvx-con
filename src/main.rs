@@ -23,6 +23,7 @@ use embassy_rp::{
     peripherals::{CORE1, USB},
     usb::Driver as UsbDriver,
 };
+use embassy_time::Timer;
 use static_cell::StaticCell;
 
 use {defmt_rtt as _, panic_halt as _};
@@ -46,6 +47,12 @@ async fn main(spawner: Spawner) {
     log::info!("Initializing Adc...");
     let adc = Adc::new(p.ADC, Irqs, adc::Config::default());
     log::info!("Adc initialized.");
+
+    // add some delay to give an attached debug probe time to parse the
+    // defmt RTT header. Reading that header might touch flash memory, which
+    // interferes with flash write operations.
+    // https://github.com/knurling-rs/defmt/pull/683
+    Timer::after_millis(10).await;
 
     log::info!("Initializing userdata...");
     let userdata_task = init_userdata(p.FLASH, p.DMA_CH1).await;
