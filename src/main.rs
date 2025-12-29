@@ -11,7 +11,8 @@ mod via;
 use crate::{
     input::{InputConfig, InputPinout},
     led::{LedConfig, LedPinout, led_task},
-    usb::usb_task, userdata::init_userdata,
+    usb::usb_task,
+    userdata::init_userdata,
 };
 use embassy_executor::{Executor, Spawner};
 use embassy_rp::{
@@ -46,30 +47,6 @@ async fn main(spawner: Spawner) {
     let driver = UsbDriver::new(p.USB, Irqs);
     log::info!("USB driver initialized.");
 
-    log::info!("Initializing USB devices...");
-    let usb_task = usb_task(
-        InputConfig {
-            adc,
-            dma: p.DMA_CH0,
-            pins: InputPinout {
-                button_1: p.PIN_0,
-                button_2: p.PIN_1,
-                button_3: p.PIN_2,
-                button_4: p.PIN_3,
-
-                fx_1: p.PIN_4,
-                fx_2: p.PIN_5,
-
-                start: p.PIN_6,
-
-                left_knob: p.PIN_26,
-                right_knob: p.PIN_27,
-            },
-        },
-        driver,
-    );
-    log::info!("USB devices initialized.");
-
     log::info!("Initializing Core 1...");
     start_core1(p.CORE1, |spawner| {
         log::info!("Initializing LED...");
@@ -89,7 +66,28 @@ async fn main(spawner: Spawner) {
     log::info!("Core 1 initialized.");
 
     log::info!("System started.");
-    usb_task.await;
+    usb_task(
+        InputConfig {
+            adc,
+            dma: p.DMA_CH0,
+            pins: InputPinout {
+                button_1: p.PIN_0,
+                button_2: p.PIN_1,
+                button_3: p.PIN_2,
+                button_4: p.PIN_3,
+
+                fx_1: p.PIN_4,
+                fx_2: p.PIN_5,
+
+                start: p.PIN_6,
+
+                left_knob: p.PIN_26,
+                right_knob: p.PIN_27,
+            },
+        },
+        driver,
+    )
+    .await;
 }
 
 fn start_core1(core1: Peri<'static, CORE1>, f: impl FnOnce(Spawner) + 'static + Send) {
