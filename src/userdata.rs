@@ -28,7 +28,7 @@ impl Signature {
     pub const CURRENT: Self = Signature(0x26d67ba0);
 }
 
-#[derive(Clone, Copy, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
+#[derive(Clone, Default, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 pub struct Userdata {
     pub input_mode: InputMode,
 }
@@ -119,7 +119,7 @@ async fn userdata_task(mut io: UserdataIo<'static>) {
     loop {
         SAVE_SIGNAL.wait().await;
 
-        match io.save(&get(|userdata| *userdata)).await {
+        match io.save(&get(|userdata| userdata.clone())).await {
             Ok(_) => {
                 log::info!("Userdata saved.");
             }
