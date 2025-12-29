@@ -13,6 +13,10 @@ impl ViaKeyboardValueId {
     pub const DEVICE_INDICATION: u8 = 0x05;
 }
 
+/// Value extracted from
+/// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L51
+const VIA_FIRMWARE_VERSION: u32 = 0x00000000;
+
 pub async fn read_via_keyboard_value(data: &mut [u8]) {
     let id = data[1];
 
@@ -23,6 +27,14 @@ pub async fn read_via_keyboard_value(data: &mut [u8]) {
             data[3] = now[1];
             data[4] = now[2];
             data[5] = now[3];
+        }
+
+        ViaKeyboardValueId::FIRMWARE_VERSION => {
+            let ver = VIA_FIRMWARE_VERSION.to_le_bytes();
+            data[2] = ver[0];
+            data[3] = ver[1];
+            data[4] = ver[2];
+            data[5] = ver[3];
         }
 
         _ => {
