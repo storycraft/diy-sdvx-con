@@ -7,8 +7,8 @@ use crate::{
     via::via_task,
 };
 
-pub mod hid;
 pub mod config;
+pub mod hid;
 
 pub async fn usb_task(input_config: InputConfig, driver: UsbDriver<'static, USB>) {
     // Allocates descriptor and control buffer
