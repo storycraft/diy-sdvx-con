@@ -44,6 +44,7 @@ critical-section = "1.2.0"
 defmt-rtt = "1.1.0"
 usbd-hid = { version = "0.8.2", features = ["defmt"] }
 static_cell = "2.1.1"
+zerocopy = { version = "0.8.31", features = ["derive"] }
 
 [package.metadata.embassy]
 build = [

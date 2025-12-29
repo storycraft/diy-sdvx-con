@@ -648,6 +648,7 @@ dependencies = [
  "panic-halt",
  "static_cell",
  "usbd-hid",
+ "zerocopy",
 ]
 
 [[package]]

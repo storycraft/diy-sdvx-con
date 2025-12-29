@@ -4,7 +4,7 @@
 mod input;
 mod led;
 mod logger;
-mod storage;
+mod userdata;
 mod usb;
 mod via;
 
