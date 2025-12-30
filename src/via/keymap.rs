@@ -1,9 +1,55 @@
 use num_traits::FromPrimitive;
+use zerocopy::{FromBytes, Immutable, IntoBytes, big_endian};
 
-use crate::{
-    keycode::Keycode,
-    userdata::{self, keymap::Keymap},
-};
+use crate::{keycode::Keycode, userdata::keymap::Keymap};
+
+#[derive(PartialEq, Eq, FromBytes, IntoBytes, Immutable)]
+#[repr(C)]
+/// QMK dynamic keymap buffer emulation
+pub struct KeymapBuffer {
+    _unused0: big_endian::U16,
+    pub start: big_endian::U16,
+    _unused1: [big_endian::U16; 2],
+
+    pub button1: big_endian::U16,
+    pub button2: big_endian::U16,
+    pub button3: big_endian::U16,
+    pub button4: big_endian::U16,
+
+    pub fx1: big_endian::U16,
+    pub fx2: big_endian::U16,
+    _unused2: [big_endian::U16; 2],
+}
+
+impl KeymapBuffer {
+    pub fn from_keymap(keymap: &Keymap) -> Self {
+        Self {
+            _unused0: big_endian::U16::ZERO,
+            start: big_endian::U16::new(keymap.start as _),
+            _unused1: [big_endian::U16::ZERO; 2],
+
+            button1: big_endian::U16::new(keymap.button1 as _),
+            button2: big_endian::U16::new(keymap.button2 as _),
+            button3: big_endian::U16::new(keymap.button3 as _),
+            button4: big_endian::U16::new(keymap.button4 as _),
+            fx1: big_endian::U16::new(keymap.fx1 as _),
+            fx2: big_endian::U16::new(keymap.fx2 as _),
+            _unused2: [big_endian::U16::ZERO; 2],
+        }
+    }
+
+    pub fn apply_keymap(&self, map: &mut Keymap) {
+        map.start = Keycode::from_u16(self.start.get()).unwrap_or_default();
+
+        map.button1 = Keycode::from_u16(self.button1.get()).unwrap_or_default();
+        map.button2 = Keycode::from_u16(self.button2.get()).unwrap_or_default();
+        map.button3 = Keycode::from_u16(self.button3.get()).unwrap_or_default();
+        map.button4 = Keycode::from_u16(self.button4.get()).unwrap_or_default();
+
+        map.fx1 = Keycode::from_u16(self.fx1.get()).unwrap_or_default();
+        map.fx2 = Keycode::from_u16(self.fx2.get()).unwrap_or_default();
+    }
+}
 
 /// Get key from row, col layout
 pub fn get_keymap_keycode(map: &Keymap, row: u8, col: u8) -> Option<Keycode> {
@@ -51,67 +97,4 @@ pub fn set_keymap_keycode(map: &mut Keymap, row: u8, col: u8, code: Keycode) {
 
         _ => {}
     }
-}
-
-/// Emulate qmk keymap.
-/// The keymap buffer is inversed for easier endianess handling
-pub fn keymap_buffer(map: &Keymap) -> [u16; 12] {
-    [
-        0,
-        0,
-        map.fx2 as u16,
-        map.fx1 as u16,
-        map.button4 as u16,
-        map.button3 as u16,
-        map.button2 as u16,
-        map.button1 as u16,
-        0,
-        0,
-        map.start as u16,
-        0,
-    ]
-}
-
-pub fn apply_keymap_buffer(map: &mut Keymap, buf: &[u16; 12]) {
-    map.fx2 = Keycode::from_u16(buf[2]).unwrap_or_default();
-    map.fx1 = Keycode::from_u16(buf[3]).unwrap_or_default();
-
-    map.button4 = Keycode::from_u16(buf[4]).unwrap_or_default();
-    map.button3 = Keycode::from_u16(buf[5]).unwrap_or_default();
-    map.button2 = Keycode::from_u16(buf[6]).unwrap_or_default();
-    map.button1 = Keycode::from_u16(buf[7]).unwrap_or_default();
-
-    map.start = Keycode::from_u16(buf[10]).unwrap_or_default();
-}
-
-pub fn get_encoder_keycode(id: u8, clockwise: bool) -> Option<Keycode> {
-    userdata::get(|data| match (id, clockwise) {
-        (1, false) => Some(data.keymap.left_knob_left),
-        (1, true) => Some(data.keymap.left_knob_right),
-
-        (2, false) => Some(data.keymap.right_knob_left),
-        (2, true) => Some(data.keymap.right_knob_right),
-
-        _ => None,
-    })
-}
-
-pub fn set_encoder_keycode(id: u8, clockwise: bool, code: Keycode) {
-    userdata::update(|data| match (id, clockwise) {
-        (1, false) => {
-            data.keymap.left_knob_left = code;
-        }
-        (1, true) => {
-            data.keymap.left_knob_right = code;
-        }
-
-        (2, false) => {
-            data.keymap.right_knob_left = code;
-        }
-        (2, true) => {
-            data.keymap.right_knob_right = code;
-        }
-
-        _ => {}
-    })
 }

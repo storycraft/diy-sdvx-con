@@ -1,4 +1,5 @@
 mod custom;
+mod encoder;
 mod keyboard;
 mod keymap;
 
@@ -15,11 +16,9 @@ use crate::{
     userdata::{self, keymap::Keymap},
     via::{
         custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
+        encoder::{get_encoder_keycode, set_encoder_keycode},
         keyboard::read_via_keyboard_value,
-        keymap::{
-            apply_keymap_buffer, get_encoder_keycode, get_keymap_keycode, keymap_buffer,
-            set_encoder_keycode, set_keymap_keycode,
-        },
+        keymap::{KeymapBuffer, get_keymap_keycode, set_keymap_keycode},
     },
 };
 
@@ -154,26 +153,28 @@ async fn read_via_cmd(data: &mut [u8]) {
             let offset = (data[1] as u16) << 8 | data[2] as u16;
             let size = data[3];
 
-            let keymap_buf = userdata::get(|userdata| keymap_buffer(&userdata.keymap));
-            let byte_buf = keymap_buf.as_bytes();
-            for i in 0..size as usize {
-                let p = offset as usize + i;
-                data[4 + i] = byte_buf[byte_buf.len() - 1 - p];
-            }
+            let keymap_buf = userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
+            data.get_mut(4..(size as usize)).unwrap().copy_from_slice(
+                keymap_buf
+                    .as_bytes()
+                    .get((offset as usize)..(size as usize))
+                    .unwrap(),
+            );
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
             let offset = (data[1] as u16) << 8 | data[2] as u16;
             let size = data[3];
 
-            let mut keymap_buf = userdata::get(|userdata| keymap_buffer(&userdata.keymap));
-            let byte_buf = keymap_buf.as_mut_bytes();
-            for i in 0..size as usize {
-                let p = offset as usize + i;
-                byte_buf[byte_buf.len() - 1 - p] = data[4 + i];
-            }
+            let mut keymap_buf =
+                userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
+            keymap_buf
+                .as_mut_bytes()
+                .get_mut((offset as usize)..(size as usize))
+                .unwrap()
+                .copy_from_slice(data.get(4..(size as usize)).unwrap());
 
-            userdata::update(|userdata| apply_keymap_buffer(&mut userdata.keymap, &mut keymap_buf));
+            userdata::update(|userdata| keymap_buf.apply_keymap(&mut userdata.keymap));
         }
 
         ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
