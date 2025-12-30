@@ -64,10 +64,10 @@ impl AsInputReport for GamepadInputReport {}
 
 #[gen_hid_descriptor(
     (collection = APPLICATION, usage_page = 0xFF60, usage = 0x61) = {
-        (usage = 0x62, usage = 0x62) = {
+        (usage_page = 0xFF60, usage = 0x62) = {
             #[item_settings data, variable, absolute] data = input;
         };
-        (usage = 0x63, usage = 0x63) = {
+        (usage_page = 0xFF60, usage = 0x63) = {
             #[item_settings data, variable, absolute] data = output;
         };
     }
