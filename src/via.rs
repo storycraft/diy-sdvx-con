@@ -185,6 +185,7 @@ impl<'a> ViaCmd<'a> {
                     .copy_from_slice(buf.get(..size).unwrap());
 
                 userdata::update(|userdata| keymap_buf.apply_keymap(&mut userdata.keymap));
+                userdata::save();
             }
 
             ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
