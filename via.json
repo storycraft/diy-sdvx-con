@@ -1,0 +1,203 @@
+{
+  "name": "SDVX Controller",
+  "vendorId": "0x3D5A",
+  "productId": "0xCAFE",
+  "matrix": {
+    "rows": 3,
+    "cols": 4
+  },
+  "menus": [
+    {
+      "label": "Controller",
+      "content": [
+        {
+          "label": "System",
+          "content": [
+            {
+              "label": "Reboot to BOOTSEL",
+              "type": "button",
+              "options": [
+                1
+              ],
+              "content": [
+                "id_reboot",
+                0,
+                2
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "customKeycodes": [
+    {
+      "name": "Joystick Btn1",
+      "title": "Gamepad Button 1",
+      "shortName": "JOY_BTN1"
+    },
+    {
+      "name": "Joystick Btn2",
+      "title": "Gamepad Button 2",
+      "shortName": "JOY_BTN2"
+    },
+    {
+      "name": "Joystick Btn3",
+      "title": "Gamepad Button 3",
+      "shortName": "JOY_BTN3"
+    },
+    {
+      "name": "Joystick Btn4",
+      "title": "Gamepad Button 4",
+      "shortName": "JOY_BTN4"
+    },
+    {
+      "name": "Joystick Btn5",
+      "title": "Gamepad Button 5",
+      "shortName": "JOY_BTN5"
+    },
+    {
+      "name": "Joystick Btn6",
+      "title": "Gamepad Button 6",
+      "shortName": "JOY_BTN6"
+    },
+    {
+      "name": "Joystick Btn7",
+      "title": "Gamepad Button 7",
+      "shortName": "JOY_BTN7"
+    },
+    {
+      "name": "Joystick Btn8",
+      "title": "Gamepad Button 8",
+      "shortName": "JOY_BTN8"
+    },
+    {
+      "name": "Joystick Btn9",
+      "title": "Gamepad Button 9",
+      "shortName": "JOY_BTN9"
+    },
+    {
+      "name": "Joystick Btn10",
+      "title": "Gamepad Button 10",
+      "shortName": "JOY_BTN10"
+    },
+    {
+      "name": "Joystick Btn11",
+      "title": "Gamepad Button 11",
+      "shortName": "JOY_BTN11"
+    },
+    {
+      "name": "Joystick Btn12",
+      "title": "Gamepad Button 12",
+      "shortName": "JOY_BTN12"
+    },
+    {
+      "name": "Joystick Btn13",
+      "title": "Gamepad Button 13",
+      "shortName": "JOY_BTN13"
+    },
+    {
+      "name": "Joystick Btn14",
+      "title": "Gamepad Button 14",
+      "shortName": "JOY_BTN14"
+    },
+    {
+      "name": "Joystick Btn15",
+      "title": "Gamepad Button 15",
+      "shortName": "JOY_BTN15"
+    },
+    {
+      "name": "Joystick Btn16",
+      "title": "Gamepad Button 16",
+      "shortName": "JOY_BTN16"
+    },
+    {
+      "name": "Dpad Up",
+      "title": "Gamepad Dpad Up",
+      "shortName": "DPAD_UP"
+    },
+    {
+      "name": "Dpad Left",
+      "title": "Gamepad Dpad Left",
+      "shortName": "DPAD_LEFT"
+    },
+    {
+      "name": "Dpad Down",
+      "title": "Gamepad Dpad Down",
+      "shortName": "DPAD_DOWN"
+    },
+    {
+      "name": "Dpad Right",
+      "title": "Gamepad Dpad Right",
+      "shortName": "DPAD_RIGHT"
+    }
+  ],
+  "layouts": {
+    "presets": {
+      "asdf": [0]
+    },
+    "keymap": [
+      [
+        {
+          "w": 1.5,
+          "h": 1.5,
+          "c": "#cccccc"
+        },
+        "\n\n\n\n\n\n\n\n\ne1",
+        {
+          "x": 2.75,
+          "c": "#aaaaaa"
+        },
+        "0,1",
+        {
+          "x": 2.75,
+          "w": 1.5,
+          "h": 1.5,
+          "c": "#cccccc"
+        },
+        "\n\n\n\n\n\n\n\n\ne2"
+      ],
+      [
+        {
+          "y": 2,
+          "c": "#777777",
+          "w": 2,
+          "h": 2
+        },
+        "1,0",
+        {
+          "x": 0.5,
+          "w": 2,
+          "h": 2
+        },
+        "1,1",
+        {
+          "x": 0.5,
+          "w": 2,
+          "h": 2
+        },
+        "1,2",
+        {
+          "x": 0.5,
+          "w": 2,
+          "h": 2
+        },
+        "1,3"
+      ],
+      [
+        {
+          "y": 2,
+          "x": 1,
+          "c": "#aaaaaa",
+          "w": 2
+        },
+        "2,0",
+        {
+          "x": 3.5,
+          "w": 2
+        },
+        "2,1"
+      ]
+    ]
+  }
+}
