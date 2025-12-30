@@ -4,10 +4,7 @@ use embassy_rp::{
     gpio::{Level, Output, Pin},
     peripherals::*,
 };
-use embassy_sync::{
-    blocking_mutex::raw::CriticalSectionRawMutex,
-    watch::{self, Watch},
-};
+use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 
 use embassy_time::Timer;
 
@@ -55,18 +52,15 @@ impl Default for LedState {
     }
 }
 
-static LED_STATE: Watch<CriticalSectionRawMutex, LedState, 1> = Watch::new();
+static LED_STATE: Signal<CriticalSectionRawMutex, LedState> = Signal::new();
 
 #[inline]
-pub fn led_sender<'a>() -> watch::Sender<'a, CriticalSectionRawMutex, LedState, 1> {
-    LED_STATE.sender()
+pub fn update<'a>(led: LedState) {
+    LED_STATE.signal(led);
 }
 
 #[embassy_executor::task]
 pub async fn led_task(cfg: LedConfig) {
-    // There can be only one led_task existing at a time, so unwrap is safe here
-    let mut receiver = LED_STATE.receiver().unwrap();
-
     let mut button_1 = led(cfg.pins.button_1);
     let mut button_2 = led(cfg.pins.button_2);
     let mut button_3 = led(cfg.pins.button_3);
@@ -78,11 +72,10 @@ pub async fn led_task(cfg: LedConfig) {
     let mut last_state = LedState::default();
     loop {
         // Limit updates maximum 125Hz
-        let (state, _) = join(
-            receiver.changed_and(|&state| last_state != state),
-            Timer::after_millis(8),
-        )
-        .await;
+        let (state, _) = join(LED_STATE.wait(), Timer::after_millis(8)).await;
+        if state == last_state {
+            continue;
+        }
 
         button_1.set_level(state.button_1);
         button_2.set_level(state.button_2);

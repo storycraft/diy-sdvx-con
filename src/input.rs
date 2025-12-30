@@ -19,7 +19,7 @@ use crate::{
         reader::{InputDriver, InputReader},
         state::{KnobState, KnobTurn},
     },
-    led::{LedState, led_sender},
+    led::{self, LedState},
     usb::{self, hid::GamepadInputReport},
 };
 
@@ -84,7 +84,6 @@ pub fn input_task<'a, D: Driver<'a>>(
     };
     let mut reader = InputReader::new(cfg.adc, cfg.dma, inputs);
 
-    let led_sender = led_sender();
     async move {
         writer.ready().await;
 
@@ -93,7 +92,7 @@ pub fn input_task<'a, D: Driver<'a>>(
         let mut right_knob_state = KnobState::new(state.right_knob);
 
         loop {
-            led_sender.send(LedState {
+            led::update(LedState {
                 button_1: state.button1,
                 button_2: state.button2,
                 button_3: state.button3,
