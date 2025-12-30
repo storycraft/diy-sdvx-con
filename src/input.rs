@@ -1,3 +1,4 @@
+mod config;
 mod debouncer;
 mod reader;
 mod state;
@@ -17,7 +18,7 @@ use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 
 use crate::{
     input::{
-        reader::{InputDriver, InputReader},
+        reader::{DebouncedInput, InputDriver, InputReader},
         state::{KnobState, KnobTurn},
     },
     led::{self, LedState},
@@ -192,9 +193,9 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
 }
 
 #[inline(always)]
-fn button<'a>(pin: Peri<'a, impl Pin>) -> Input<'a> {
+fn button<'a>(pin: Peri<'a, impl Pin>) -> DebouncedInput<'a> {
     let mut input = Input::new(pin, Pull::Up);
     input.set_schmitt(true);
     input.set_inversion(true);
-    input
+    DebouncedInput::new(input)
 }

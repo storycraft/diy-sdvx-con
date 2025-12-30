@@ -1,5 +1,5 @@
 /// Debouncer for button.
-/// 
+///
 /// The debouncer algorithm instantly react to button press,
 /// but apply defer debouncing on release.
 /// It gives lowest latency and some noise resistance.
@@ -18,9 +18,9 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
         }
     }
 
-    pub fn debounce(&mut self, raw_state: bool, elapsed: u8) -> bool {
+    pub fn debounce(&mut self, raw_state: bool, elapsed_ms: u8) -> bool {
         if self.timer != 0 {
-            self.timer = self.timer.saturating_sub(elapsed);
+            self.timer = self.timer.saturating_sub(elapsed_ms);
         }
 
         // Reset timer if raw state changes during release debounce time

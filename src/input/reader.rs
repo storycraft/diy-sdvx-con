@@ -5,8 +5,13 @@ use embassy_rp::{
     gpio::{Input, Level},
     peripherals::DMA_CH0,
 };
+use embassy_time::Instant;
+
+use crate::input::{config::DEBOUNCE_MS, debouncer::ButtonDebouncer};
 
 pub struct InputReader<'a> {
+    last_read: Instant,
+
     inputs: InputDriver<'a>,
 
     /// ADC for knob analog conversion
@@ -20,6 +25,8 @@ pub struct InputReader<'a> {
 impl<'a> InputReader<'a> {
     pub fn new(adc: Adc<'a, adc::Async>, dma: Peri<'a, DMA_CH0>, inputs: InputDriver<'a>) -> Self {
         Self {
+            last_read: Instant::MIN,
+
             inputs,
 
             adc,
@@ -29,15 +36,19 @@ impl<'a> InputReader<'a> {
     }
 
     pub async fn read(&mut self) -> InputRead {
-        let button1 = self.inputs.button1.get_level();
-        let button2 = self.inputs.button2.get_level();
-        let button3 = self.inputs.button3.get_level();
-        let button4 = self.inputs.button4.get_level();
+        let now = Instant::now();
+        let elapsed_ms = (now.as_millis() - self.last_read.as_millis()).max(u8::MAX as _) as u8;
+        self.last_read = now;
 
-        let fx1 = self.inputs.fx1.get_level();
-        let fx2 = self.inputs.fx2.get_level();
+        let button1 = self.inputs.button1.read(elapsed_ms);
+        let button2 = self.inputs.button2.read(elapsed_ms);
+        let button3 = self.inputs.button3.read(elapsed_ms);
+        let button4 = self.inputs.button4.read(elapsed_ms);
 
-        let start = self.inputs.start.get_level();
+        let fx1 = self.inputs.fx1.read(elapsed_ms);
+        let fx2 = self.inputs.fx2.read(elapsed_ms);
+
+        let start = self.inputs.start.read(elapsed_ms);
 
         let (left_knob, right_knob) = read_knob(
             &mut self.adc,
@@ -61,20 +72,6 @@ impl<'a> InputReader<'a> {
     }
 }
 
-pub struct InputDriver<'a> {
-    pub button1: Input<'a>,
-    pub button2: Input<'a>,
-    pub button3: Input<'a>,
-    pub button4: Input<'a>,
-
-    pub fx1: Input<'a>,
-    pub fx2: Input<'a>,
-
-    pub start: Input<'a>,
-
-    pub knobs: [adc::Channel<'a>; 2],
-}
-
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct InputRead {
     pub button1: Level,
@@ -89,6 +86,38 @@ pub struct InputRead {
 
     pub left_knob: u8,
     pub right_knob: u8,
+}
+
+pub struct InputDriver<'a> {
+    pub button1: DebouncedInput<'a>,
+    pub button2: DebouncedInput<'a>,
+    pub button3: DebouncedInput<'a>,
+    pub button4: DebouncedInput<'a>,
+
+    pub fx1: DebouncedInput<'a>,
+    pub fx2: DebouncedInput<'a>,
+
+    pub start: DebouncedInput<'a>,
+
+    pub knobs: [adc::Channel<'a>; 2],
+}
+
+pub struct DebouncedInput<'a> {
+    input: Input<'a>,
+    debouncer: ButtonDebouncer<DEBOUNCE_MS>,
+}
+
+impl<'a> DebouncedInput<'a> {
+    pub const fn new(input: Input<'a>) -> Self {
+        Self {
+            input,
+            debouncer: ButtonDebouncer::new(false),
+        }
+    }
+
+    fn read(&mut self, elapsed_ms: u8) -> Level {
+        Level::from(self.debouncer.debounce(self.input.is_high(), elapsed_ms))
+    }
 }
 
 const KNOB_SAMPLES: usize = 32;
