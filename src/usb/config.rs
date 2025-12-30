@@ -1,4 +1,6 @@
-use usbd_hid::descriptor::SerializedDescriptor;
+use usbd_hid::descriptor::{
+    KeyboardReport, MediaKeyboardReport, MouseReport, SerializedDescriptor,
+};
 
 use crate::usb::hid::{GamepadInputReport, QmkRawHidReport};
 
@@ -23,7 +25,34 @@ pub fn gamepad<'a>() -> embassy_usb::class::hid::Config<'a> {
         report_descriptor: GamepadInputReport::desc(),
         request_handler: None,
         poll_ms: 1,
-        max_packet_size: 8,
+        max_packet_size: const { size_of::<GamepadInputReport>() as u16 },
+    }
+}
+
+pub fn keyboard<'a>() -> embassy_usb::class::hid::Config<'a> {
+    embassy_usb::class::hid::Config {
+        report_descriptor: KeyboardReport::desc(),
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: const { size_of::<KeyboardReport>() as u16 },
+    }
+}
+
+pub fn mouse<'a>() -> embassy_usb::class::hid::Config<'a> {
+    embassy_usb::class::hid::Config {
+        report_descriptor: MouseReport::desc(),
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: const { size_of::<MouseReport>() as u16 },
+    }
+}
+
+pub fn media_control<'a>() -> embassy_usb::class::hid::Config<'a> {
+    embassy_usb::class::hid::Config {
+        report_descriptor: MediaKeyboardReport::desc(),
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: const { size_of::<MediaKeyboardReport>() as u16 },
     }
 }
 
@@ -32,6 +61,6 @@ pub fn via<'a>() -> embassy_usb::class::hid::Config<'a> {
         report_descriptor: QmkRawHidReport::desc(),
         request_handler: None,
         poll_ms: 8,
-        max_packet_size: 32,
+        max_packet_size: const { size_of::<QmkRawHidReport>() as u16 },
     }
 }

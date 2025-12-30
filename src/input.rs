@@ -11,6 +11,7 @@ use embassy_usb::{
     class::hid::{self, HidWriter},
     driver::Driver,
 };
+use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 
 use crate::{
     input::{
@@ -62,10 +63,30 @@ struct ControllerInput {
 
 pub fn input_task<'a, D: Driver<'a>>(
     cfg: InputConfig,
-    state: &'a mut hid::State<'a>,
+    states: &'a mut [hid::State<'a>; 4],
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {
-    let mut writer = HidWriter::<_, 8>::new(builder, state, usb::config::gamepad());
+    let [gamepad_state, keyboard_state, mouse_state, media_state] = states;
+    let mut gamepad_writer = HidWriter::<_, { size_of::<GamepadInputReport>() }>::new(
+        builder,
+        gamepad_state,
+        usb::config::gamepad(),
+    );
+    let mut keyboard_writer = HidWriter::<_, { size_of::<KeyboardReport>() }>::new(
+        builder,
+        keyboard_state,
+        usb::config::keyboard(),
+    );
+    let mut mouse_writer = HidWriter::<_, { size_of::<MouseReport>() }>::new(
+        builder,
+        mouse_state,
+        usb::config::mouse(),
+    );
+    let mut media_writer = HidWriter::<_, { size_of::<MediaKeyboardReport>() }>::new(
+        builder,
+        media_state,
+        usb::config::media_control(),
+    );
 
     let inputs = InputDriver {
         button1: button(cfg.pins.button1),
@@ -84,7 +105,7 @@ pub fn input_task<'a, D: Driver<'a>>(
 
     let led_sender = led_sender();
     async move {
-        writer.ready().await;
+        gamepad_writer.ready().await;
 
         let mut state = reader.read().await;
         let mut left_knob_state = KnobState::new(state.left_knob);
@@ -113,7 +134,7 @@ pub fn input_task<'a, D: Driver<'a>>(
                 right_knob: right_knob_state.update(state.right_knob),
             };
 
-            match writer.write_serialize(&input_report(input)).await {
+            match gamepad_writer.write_serialize(&input_report(input)).await {
                 Ok(()) => {}
                 Err(e) => log::error!("Failed to send input report: {:?}", e),
             };
