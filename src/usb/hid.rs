@@ -64,8 +64,12 @@ impl AsInputReport for GamepadInputReport {}
 
 #[gen_hid_descriptor(
     (collection = APPLICATION, usage_page = 0xFF60, usage = 0x61) = {
-        #[item_settings data, variable, absolute] data = input;
-        #[item_settings data, variable, absolute] data = output;
+        (usage = 0x62, usage = 0x62) = {
+            #[item_settings data, variable, absolute] data = input;
+        };
+        (usage = 0x63, usage = 0x63) = {
+            #[item_settings data, variable, absolute] data = output;
+        };
     }
 )]
 /// Raw HID report compatible with QMK Raw HID.
