@@ -37,7 +37,7 @@ impl<'a> InputReader<'a> {
 
     pub async fn read(&mut self) -> InputRead {
         let now = Instant::now();
-        let elapsed_ms = (now.as_millis() - self.last_read.as_millis()).min(u8::MAX as _) as u8;
+        let elapsed_ms = (now.duration_since(self.last_read).as_millis()).min(u8::MAX as _) as u8;
         self.last_read = now;
 
         let button1 = self.inputs.button1.read(elapsed_ms);
