@@ -201,6 +201,7 @@ impl<'a> ViaCmd<'a> {
 
                 if let Some(key) = Keycode::from_u16(cmd.key.get()) {
                     set_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0, key);
+                    userdata::save();
                 }
             }
 
