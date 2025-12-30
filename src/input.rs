@@ -1,6 +1,7 @@
 mod reader;
 mod state;
 
+use embassy_futures::join::join4;
 use embassy_rp::{
     Peri,
     adc::{self, Adc},
@@ -66,27 +67,7 @@ pub fn input_task<'a, D: Driver<'a>>(
     states: &'a mut [hid::State<'a>; 4],
     builder: &mut embassy_usb::Builder<'a, D>,
 ) -> impl Future<Output = ()> + use<'a, D> {
-    let [gamepad_state, keyboard_state, mouse_state, media_state] = states;
-    let mut gamepad_writer = HidWriter::<_, { size_of::<GamepadInputReport>() }>::new(
-        builder,
-        gamepad_state,
-        usb::config::gamepad(),
-    );
-    let mut keyboard_writer = HidWriter::<_, { size_of::<KeyboardReport>() }>::new(
-        builder,
-        keyboard_state,
-        usb::config::keyboard(),
-    );
-    let mut mouse_writer = HidWriter::<_, { size_of::<MouseReport>() }>::new(
-        builder,
-        mouse_state,
-        usb::config::mouse(),
-    );
-    let mut media_writer = HidWriter::<_, { size_of::<MediaKeyboardReport>() }>::new(
-        builder,
-        media_state,
-        usb::config::media_control(),
-    );
+    let mut writer = HidInputWriter::new(builder, states);
 
     let inputs = InputDriver {
         button1: button(cfg.pins.button1),
@@ -105,7 +86,7 @@ pub fn input_task<'a, D: Driver<'a>>(
 
     let led_sender = led_sender();
     async move {
-        gamepad_writer.ready().await;
+        writer.ready().await;
 
         let mut state = reader.read().await;
         let mut left_knob_state = KnobState::new(state.left_knob);
@@ -134,13 +115,46 @@ pub fn input_task<'a, D: Driver<'a>>(
                 right_knob: right_knob_state.update(state.right_knob),
             };
 
-            match gamepad_writer.write_serialize(&input_report(input)).await {
+            match writer.gamepad.write_serialize(&input_report(input)).await {
                 Ok(()) => {}
                 Err(e) => log::error!("Failed to send input report: {:?}", e),
             };
 
             state = reader.read().await;
         }
+    }
+}
+
+pub struct HidInputWriter<'a, D: Driver<'a>> {
+    pub gamepad: HidWriter<'a, D, { size_of::<GamepadInputReport>() }>,
+    pub keyboard: HidWriter<'a, D, { size_of::<KeyboardReport>() }>,
+    pub mouse: HidWriter<'a, D, { size_of::<MouseReport>() }>,
+    pub media: HidWriter<'a, D, { size_of::<MediaKeyboardReport>() }>,
+}
+
+impl<'a, D: Driver<'a>> HidInputWriter<'a, D> {
+    pub fn new(
+        builder: &mut embassy_usb::Builder<'a, D>,
+        states: &'a mut [hid::State<'a>; 4],
+    ) -> Self {
+        let [gamepad_state, keyboard_state, mouse_state, media_state] = states;
+
+        Self {
+            gamepad: HidWriter::new(builder, gamepad_state, usb::config::gamepad()),
+            keyboard: HidWriter::new(builder, keyboard_state, usb::config::keyboard()),
+            mouse: HidWriter::new(builder, mouse_state, usb::config::mouse()),
+            media: HidWriter::new(builder, media_state, usb::config::media_control()),
+        }
+    }
+
+    async fn ready(&mut self) {
+        join4(
+            self.gamepad.ready(),
+            self.keyboard.ready(),
+            self.mouse.ready(),
+            self.media.ready(),
+        )
+        .await;
     }
 }
 
