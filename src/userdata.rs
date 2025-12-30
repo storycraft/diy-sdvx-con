@@ -12,7 +12,7 @@ use embassy_sync::{
     signal::Signal,
     watch::{Receiver, Watch},
 };
-use embassy_time::Timer;
+use embassy_time::{Duration, Ticker};
 use scopeguard::defer;
 use zerocopy::{Immutable, IntoBytes, TryFromBytes};
 
@@ -98,6 +98,7 @@ pub async fn init_userdata(
 
 #[embassy_executor::task]
 async fn userdata_task(mut io: UserdataIo<'static>) {
+    let mut ticker = Ticker::every(Duration::from_secs(5));
     loop {
         SAVE_SIGNAL.wait().await;
 
@@ -112,6 +113,6 @@ async fn userdata_task(mut io: UserdataIo<'static>) {
         }
 
         // Debouncing timer
-        Timer::after_secs(5).await;
+        ticker.next().await;
     }
 }

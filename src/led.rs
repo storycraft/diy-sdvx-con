@@ -6,7 +6,7 @@ use embassy_rp::{
 };
 use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
 
-use embassy_time::Timer;
+use embassy_time::{Duration, Ticker};
 
 pub struct LedConfig {
     /// LED pinout
@@ -70,9 +70,10 @@ pub async fn led_task(cfg: LedConfig) {
     let mut start = led(cfg.pins.start);
 
     let mut last_state = LedState::default();
+    let mut ticker = Ticker::every(Duration::from_millis(8));
     loop {
         // Limit updates maximum 125Hz
-        let (state, _) = join(LED_STATE.wait(), Timer::after_millis(8)).await;
+        let (state, _) = join(LED_STATE.wait(), ticker.next()).await;
         if state == last_state {
             continue;
         }
