@@ -5,7 +5,7 @@ use embassy_rp::{
     gpio::{Input, Level},
     peripherals::DMA_CH0,
 };
-use embassy_time::Instant;
+use embassy_time::{Duration, Instant};
 
 use crate::input::{config::DEBOUNCE_MS, debouncer::ButtonDebouncer};
 
@@ -37,18 +37,18 @@ impl<'a> InputReader<'a> {
 
     pub async fn read(&mut self) -> InputRead {
         let now = Instant::now();
-        let elapsed_ms = (now.duration_since(self.last_read).as_millis()).min(u8::MAX as _) as u8;
+        let elapsed = now.duration_since(self.last_read);
         self.last_read = now;
 
-        let button1 = self.inputs.button1.read(elapsed_ms);
-        let button2 = self.inputs.button2.read(elapsed_ms);
-        let button3 = self.inputs.button3.read(elapsed_ms);
-        let button4 = self.inputs.button4.read(elapsed_ms);
+        let button1 = self.inputs.button1.read(elapsed);
+        let button2 = self.inputs.button2.read(elapsed);
+        let button3 = self.inputs.button3.read(elapsed);
+        let button4 = self.inputs.button4.read(elapsed);
 
-        let fx1 = self.inputs.fx1.read(elapsed_ms);
-        let fx2 = self.inputs.fx2.read(elapsed_ms);
+        let fx1 = self.inputs.fx1.read(elapsed);
+        let fx2 = self.inputs.fx2.read(elapsed);
 
-        let start = self.inputs.start.read(elapsed_ms);
+        let start = self.inputs.start.read(elapsed);
 
         let (left_knob, right_knob) = read_knob(
             &mut self.adc,
@@ -115,8 +115,8 @@ impl<'a> DebouncedInput<'a> {
         }
     }
 
-    fn read(&mut self, elapsed_ms: u8) -> Level {
-        Level::from(self.debouncer.debounce(self.input.is_high(), elapsed_ms))
+    fn read(&mut self, elapsed: Duration) -> Level {
+        Level::from(self.debouncer.debounce(self.input.is_high(), elapsed))
     }
 }
 

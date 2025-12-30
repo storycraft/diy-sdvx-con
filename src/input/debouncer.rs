@@ -1,12 +1,15 @@
+use embassy_time::Duration;
+
 /// Debouncer for button.
 ///
 /// The debouncer algorithm instantly react to button press,
 /// but apply defer debouncing on release.
 /// It gives lowest latency and some noise resistance.
+/// TODO:: remove [`Duration`]
 pub struct ButtonDebouncer<const DEBOUNCE_MS: u8> {
     release_last_raw_value: bool,
     debounced: bool,
-    timer: u8,
+    timer: Duration,
 }
 
 impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
@@ -14,18 +17,18 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
         Self {
             release_last_raw_value: initial,
             debounced: initial,
-            timer: u8::MAX,
+            timer: Duration::MAX,
         }
     }
 
-    pub fn debounce(&mut self, raw_state: bool, elapsed_ms: u8) -> bool {
-        if self.timer != 0 {
-            self.timer = self.timer.saturating_sub(elapsed_ms);
+    pub fn debounce(&mut self, raw_state: bool, elapsed: Duration) -> bool {
+        if self.timer != Duration::MIN {
+            self.timer = self.timer.checked_sub(elapsed).unwrap_or(Duration::MIN);
         }
 
         // Reset timer if raw state changes during release debounce time
         if self.debounced && self.release_last_raw_value != raw_state {
-            self.timer = DEBOUNCE_MS;
+            self.timer = Duration::from_millis(DEBOUNCE_MS as _);
             self.release_last_raw_value = raw_state;
             return true;
         }
@@ -44,7 +47,7 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
             // Wait for timer and changes
             (false, true) => {
                 // If timer is not finished, block changes.
-                if self.timer > 0 {
+                if self.timer > Duration::MIN {
                     return true;
                 }
 
@@ -57,6 +60,8 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
 
 #[cfg(test)]
 mod tests {
+    use embassy_time::Duration;
+
     use crate::input::debouncer::ButtonDebouncer;
 
     #[test]
@@ -90,7 +95,7 @@ mod tests {
         let mut debouncer = ButtonDebouncer::<5>::new(false);
         for (i, (raw_state, debounced_state)) in input_seq.into_iter().enumerate() {
             println!("{i}");
-            assert_eq!(debouncer.debounce(raw_state, 1), debounced_state);
+            assert_eq!(debouncer.debounce(raw_state, Duration::from_millis(1)), debounced_state);
         }
     }
 }
