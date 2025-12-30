@@ -1,3 +1,4 @@
+mod cmds;
 mod custom;
 mod encoder;
 mod keyboard;
@@ -8,16 +9,15 @@ use embassy_usb::{
     driver::Driver,
 };
 use num_traits::FromPrimitive;
-use zerocopy::IntoBytes;
+use zerocopy::{FromBytes, IntoBytes, big_endian};
 
 use crate::{
     keycode::Keycode,
     usb,
     userdata::{self, keymap::Keymap},
     via::{
-        custom::{read_custom_get_value, read_custom_save, read_custom_set_value},
+        cmds::*,
         encoder::{get_encoder_keycode, set_encoder_keycode},
-        keyboard::read_via_keyboard_value,
         keymap::{KeymapBuffer, get_keymap_keycode, set_keymap_keycode},
     },
 };
@@ -34,21 +34,23 @@ pub fn via_task<'a, D: Driver<'a>>(
         let mut buf = [0_u8; 32];
         loop {
             if let Err(e) = reader.read(&mut buf).await {
-                log::error!("Failed to send via report: {:?}", e);
+                log::error!("Failed to send via report err:{:?}", e);
                 continue;
             }
 
-            read_via_cmd(&mut buf).await;
+            let Some(cmd) = ViaCmd::from_raw(&mut buf) else {
+                log::error!("Failed parse via report");
+                continue;
+            };
+
+            cmd.invoke().await;
+
             if let Err(err) = writer.write(&buf).await {
-                log::error!("Failed to response via report. {:?}", err);
+                log::error!("Failed to write via report. err: {:?}", err);
             }
         }
     }
 }
-
-/// Via protocol version from
-/// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L42
-const VIA_PROTOCOL_VERSION: u16 = 0x000C;
 
 /// Via command ids from
 /// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L54
@@ -72,135 +74,139 @@ impl ViaCmdId {
     pub const UNHANDLED: u8 = 0xff;
 }
 
-async fn read_via_cmd(data: &mut [u8]) {
-    let id = data[0];
-    match id {
-        ViaCmdId::GET_PROTOCOL_VERSION => {
-            let ver = VIA_PROTOCOL_VERSION.to_be_bytes();
-            data[1] = ver[0];
-            data[2] = ver[1];
-            log::info!("Via connected.");
-        }
+struct ViaCmd<'a> {
+    id: &'a mut u8,
+    data: &'a mut [u8],
+}
 
-        ViaCmdId::GET_KEYBOARD_VALUE => {
-            read_via_keyboard_value(data).await;
-        }
+impl<'a> ViaCmd<'a> {
+    pub fn from_raw(raw: &'a mut [u8]) -> Option<Self> {
+        let (id, data) = raw.split_first_mut().unwrap();
+        Some(Self { id, data })
+    }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_KEYCODE => {
-            let _layer = data[1];
-            let row = data[2];
-            let col = data[3];
+    pub async fn invoke(self) {
+        match *self.id {
+            ViaCmdId::GET_PROTOCOL_VERSION => {
+                GetProtocolVersion::mut_from_prefix(self.data)
+                    .unwrap()
+                    .0
+                    .version = GetProtocolVersion::CURRENT_VERSION.into();
+                log::info!("Via connected.");
+            }
 
-            let key = userdata::get(|userdata| get_keymap_keycode(&userdata.keymap, row, col))
+            ViaCmdId::GET_KEYBOARD_VALUE => {
+                self.read_via_keyboard_value();
+            }
+
+            ViaCmdId::DYNAMIC_KEYMAP_GET_KEYCODE => {
+                let cmd = DynamicKeymapKeycode::mut_from_prefix(self.data).unwrap().0;
+
+                let key = userdata::get(|userdata| {
+                    get_keymap_keycode(&userdata.keymap, cmd.row, cmd.col)
+                })
                 .unwrap_or_default();
-            let key = (key as u16).to_be_bytes();
-            data[4] = key[0];
-            data[5] = key[1];
-        }
+                cmd.key = big_endian::U16::new(key as u16);
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
-            let _layer = data[1];
-            let row = data[2];
-            let col = data[3];
-            let key =
-                Keycode::from_u16(((data[4] as u16) << 8) | data[5] as u16).unwrap_or_default();
+            ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
+                let cmd = DynamicKeymapKeycode::mut_from_prefix(self.data).unwrap().0;
+                let key = Keycode::from_u16(cmd.key.get()).unwrap_or_default();
 
-            userdata::update(|userdata| {
-                set_keymap_keycode(&mut userdata.keymap, row, col, key);
-            });
-            userdata::save();
-            log::info!(
-                "Keycode at row: {row} col: {col} updated to key: {:#06X}",
-                key as u16
-            );
-        }
+                userdata::update(|userdata| {
+                    set_keymap_keycode(&mut userdata.keymap, cmd.row, cmd.col, key);
+                });
+                userdata::save();
+                log::info!(
+                    "Keycode at row: {} col: {} updated to key: {:#06X}",
+                    cmd.row,
+                    cmd.col,
+                    key as u16
+                );
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_RESET => {
-            userdata::update(|userdata| {
-                userdata.keymap = Keymap::DEFAULT;
-            });
-            log::info!("Keymap resetted to default.");
-        }
+            ViaCmdId::DYNAMIC_KEYMAP_RESET => {
+                userdata::update(|userdata| {
+                    userdata.keymap = Keymap::DEFAULT;
+                });
+                log::info!("Keymap resetted to default.");
+            }
 
-        ViaCmdId::CUSTOM_GET_VALUE => {
-            read_custom_get_value(data).await;
-        }
+            ViaCmdId::CUSTOM_GET_VALUE => {
+                self.read_custom_get_value();
+            }
 
-        ViaCmdId::CUSTOM_SET_VALUE => {
-            read_custom_set_value(data).await;
-        }
+            ViaCmdId::CUSTOM_SET_VALUE => {
+                self.read_custom_set_value();
+            }
 
-        ViaCmdId::CUSTOM_SAVE => {
-            read_custom_save(data).await;
-        }
+            ViaCmdId::CUSTOM_SAVE => {
+                self.read_custom_save();
+            }
 
-        // Disable Macro
-        ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_COUNT => {
-            data[1] = 0;
-        }
+            // Disable Macro
+            ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_COUNT => {
+                self.data[0] = 0;
+            }
 
-        // Disable Macro
-        ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE => {
-            data[1] = 0;
-        }
+            // Disable Macro
+            ViaCmdId::DYNAMIC_KEYMAP_MACRO_GET_BUFFER_SIZE => {
+                self.data[0] = 0;
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_LAYER_COUNT => {
-            // Hardcode layer count 1
-            data[1] = 1;
-        }
+            ViaCmdId::DYNAMIC_KEYMAP_GET_LAYER_COUNT => {
+                // Hardcode layer count 1
+                self.data[0] = 1;
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {
-            let offset = (data[1] as u16) << 8 | data[2] as u16;
-            let size = data[3];
+            ViaCmdId::DYNAMIC_KEYMAP_GET_BUFFER => {
+                let (cmd, buf) = DynamicKeymapBuffer::mut_from_prefix(self.data).unwrap();
+                let offset = cmd.offset.get() as usize;
+                let size = cmd.size as usize;
 
-            let keymap_buf = userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
-            data.get_mut(4..(size as usize)).unwrap().copy_from_slice(
+                let keymap_buf =
+                    userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
+                buf.get_mut(..size)
+                    .unwrap()
+                    .copy_from_slice(keymap_buf.as_bytes().get(offset..size).unwrap());
+            }
+
+            ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
+                let (cmd, buf) = DynamicKeymapBuffer::mut_from_prefix(self.data).unwrap();
+                let offset = cmd.offset.get() as usize;
+                let size = cmd.size as usize;
+
+                let mut keymap_buf =
+                    userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
                 keymap_buf
-                    .as_bytes()
-                    .get((offset as usize)..(size as usize))
-                    .unwrap(),
-            );
-        }
+                    .as_mut_bytes()
+                    .get_mut(offset..size)
+                    .unwrap()
+                    .copy_from_slice(buf.get(..size).unwrap());
 
-        ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
-            let offset = (data[1] as u16) << 8 | data[2] as u16;
-            let size = data[3];
+                userdata::update(|userdata| keymap_buf.apply_keymap(&mut userdata.keymap));
+            }
 
-            let mut keymap_buf =
-                userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
-            keymap_buf
-                .as_mut_bytes()
-                .get_mut((offset as usize)..(size as usize))
-                .unwrap()
-                .copy_from_slice(data.get(4..(size as usize)).unwrap());
+            ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
+                let cmd = DynamicKeymapEncoder::mut_from_prefix(self.data).unwrap().0;
 
-            userdata::update(|userdata| keymap_buf.apply_keymap(&mut userdata.keymap));
-        }
+                let key = get_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0)
+                    .unwrap_or_default() as u16;
+                cmd.key = big_endian::U16::new(key);
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
-            let _layer = data[1];
-            let encoder_id = data[2];
-            let clockwise = data[3] != 0;
+            ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {
+                let cmd = DynamicKeymapEncoder::mut_from_prefix(self.data).unwrap().0;
 
-            let key = (get_encoder_keycode(encoder_id, clockwise).unwrap_or_default() as u16)
-                .to_be_bytes();
-            data[4] = key[0];
-            data[5] = key[1];
-        }
+                if let Some(key) = Keycode::from_u16(cmd.key.get()) {
+                    set_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0, key);
+                }
+            }
 
-        ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {
-            let _layer = data[1];
-            let encoder_id = data[2];
-            let clockwise = data[3] != 0;
-            let keycode =
-                Keycode::from_u16((data[4] as u16) << 8 | data[5] as u16).unwrap_or_default();
-
-            set_encoder_keycode(encoder_id, clockwise, keycode);
-        }
-
-        _ => {
-            log::warn!("Invalid via command recevied: {id:#04X}");
-            data[0] = ViaCmdId::UNHANDLED;
+            _ => {
+                log::warn!("Invalid via command recevied: {:#04X}", *self.id);
+                *self.id = ViaCmdId::UNHANDLED;
+            }
         }
     }
 }

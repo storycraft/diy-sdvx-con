@@ -1,6 +1,6 @@
 use embassy_time::Instant;
 
-use crate::via::ViaCmdId;
+use crate::via::{ViaCmd, ViaCmdId};
 
 /// Via keyboard value id from
 /// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L79
@@ -17,29 +17,24 @@ impl ViaKeyboardValueId {
 /// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L51
 const VIA_FIRMWARE_VERSION: u32 = 0x00000000;
 
-pub async fn read_via_keyboard_value(data: &mut [u8]) {
-    let id = data[1];
+impl ViaCmd<'_> {
+    pub fn read_via_keyboard_value(self) {
+        let value_id = self.data[0];
 
-    match id {
-        ViaKeyboardValueId::UPTIME => {
-            let now = (Instant::now().as_millis() as u32).to_be_bytes();
-            data[2] = now[0];
-            data[3] = now[1];
-            data[4] = now[2];
-            data[5] = now[3];
-        }
+        match value_id {
+            ViaKeyboardValueId::UPTIME => {
+                let now = Instant::now().as_millis() as u32;
+                self.data[1..5].copy_from_slice(&now.to_be_bytes());
+            }
 
-        ViaKeyboardValueId::FIRMWARE_VERSION => {
-            let ver = VIA_FIRMWARE_VERSION.to_be_bytes();
-            data[2] = ver[0];
-            data[3] = ver[1];
-            data[4] = ver[2];
-            data[5] = ver[3];
-        }
+            ViaKeyboardValueId::FIRMWARE_VERSION => {
+                self.data[1..5].copy_from_slice(&VIA_FIRMWARE_VERSION.to_be_bytes());
+            }
 
-        _ => {
-            data[0] = ViaCmdId::UNHANDLED;
-            log::warn!("Invalid via keyboard value requested: {id:#04X}");
+            _ => {
+                *self.id = ViaCmdId::UNHANDLED;
+                log::warn!("Invalid via keyboard value requested: {value_id:#04X}");
+            }
         }
     }
 }

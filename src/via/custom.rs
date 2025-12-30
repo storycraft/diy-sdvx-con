@@ -2,7 +2,7 @@ use embassy_rp::rom_data;
 
 use crate::{
     userdata::{self},
-    via::ViaCmdId,
+    via::{ViaCmd, ViaCmdId},
 };
 
 struct ValueId;
@@ -11,61 +11,64 @@ impl ValueId {
     pub const REBOOT_BOOTSEL: u8 = 0x02;
 }
 
-pub async fn read_custom_get_value(data: &mut [u8]) {
-    let channel_id = data[1];
+impl ViaCmd<'_> {
+    pub fn read_custom_get_value(self) {
+        let channel_id = self.data[0];
 
-    // 0 for custom user defined channel
-    // We will only use user defined channel so ignore rest
-    if channel_id != 0 {
-        data[0] = ViaCmdId::UNHANDLED;
-        return;
-    }
-
-    let value_id = data[2];
-    match value_id {
-        ValueId::REBOOT_BOOTSEL => {
-            // Fixed value
-            data[3] = 1;
+        // 0 for custom user defined channel
+        // We will only use user defined channel so ignore rest
+        if channel_id != 0 {
+            *self.id = ViaCmdId::UNHANDLED;
+            return;
         }
 
-        _ => {
-            data[0] = ViaCmdId::UNHANDLED;
+        let value_id = self.data[1];
+        match value_id {
+            ValueId::REBOOT_BOOTSEL => {
+                // Fixed value
+                self.data[2] = 1;
+            }
+
+            _ => {
+                *self.id = ViaCmdId::UNHANDLED;
+            }
         }
     }
-}
 
-pub async fn read_custom_set_value(data: &mut [u8]) {
-    let channel_id = data[1];
+    pub fn read_custom_set_value(self) {
+        let channel_id = self.data[0];
 
-    // 0 for custom user defined channel
-    // We will only use user defined channel so ignore rest
-    if channel_id != 0 {
-        data[0] = ViaCmdId::UNHANDLED;
-        return;
-    }
-
-    let value_id = data[2];
-    match value_id {
-        ValueId::REBOOT_BOOTSEL => {
-            log::info!("BOOTSEL Reboot requested.");
-            // Reboot to BOOTSEL
-            rom_data::reset_to_usb_boot(0, 0);
+        // 0 for custom user defined channel
+        // We will only use user defined channel so ignore rest
+        if channel_id != 0 {
+            *self.id = ViaCmdId::UNHANDLED;
+            return;
         }
 
-        _ => {
-            data[0] = ViaCmdId::UNHANDLED;
+        let value_id = self.data[1];
+        match value_id {
+            ValueId::REBOOT_BOOTSEL => {
+                log::info!("BOOTSEL Reboot requested.");
+                // Reboot to BOOTSEL
+                rom_data::reset_to_usb_boot(0, 0);
+            }
+
+            _ => {
+                *self.id = ViaCmdId::UNHANDLED;
+            }
         }
     }
-}
 
-pub async fn read_custom_save(data: &mut [u8]) {
-    let channel_id = data[1];
+    pub fn read_custom_save(self) {
+        let channel_id = self.data[0];
 
-    // 0 for custom user defined channel
-    // We will only use user defined channel so ignore rest
-    if channel_id != 0 {
-        data[0] = ViaCmdId::UNHANDLED;
+        // 0 for custom user defined channel
+        // We will only use user defined channel so ignore rest
+        if channel_id != 0 {
+            *self.id = ViaCmdId::UNHANDLED;
+            return;
+        }
+
+        userdata::save();
     }
-
-    userdata::save();
 }
