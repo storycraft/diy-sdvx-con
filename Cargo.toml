@@ -29,7 +29,8 @@ embassy-executor = { version = "0.9.1", features = [
   "executor-interrupt",
   "defmt",
 ] }
-embassy-usb = { version = "0.5.1", features = ["defmt"] }
+# interface and handlers for Serial, Via, Gamepad, Mouse, Keyboard, Media Control
+embassy-usb = { version = "0.5.1", features = ["defmt", "max-interface-count-7", "max-handler-count-6"] }
 embassy-futures = { version = "0.1.2", features = ["defmt"] }
 embassy-usb-logger = "0.5.1"
 embassy-time = { version = "0.5.0", features = [
