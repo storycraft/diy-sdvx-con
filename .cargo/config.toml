@@ -6,4 +6,4 @@ target = "thumbv8m.main-none-eabihf"
 
 [env]
 # Serial, Via, Gamepad, Mouse, Keyboard, System Control
-EMBASSY_USB_MAX_INTERFACE_COUNT = 6
+EMBASSY_USB_MAX_INTERFACE_COUNT = "6"
