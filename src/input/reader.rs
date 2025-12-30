@@ -75,7 +75,7 @@ pub struct InputDriver<'a> {
     pub knobs: [adc::Channel<'a>; 2],
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct InputRead {
     pub button1: Level,
     pub button2: Level,

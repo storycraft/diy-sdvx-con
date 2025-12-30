@@ -119,7 +119,15 @@ pub fn input_task<'a, D: Driver<'a>>(
                 Err(e) => log::error!("Failed to send input report: {:?}", e),
             };
 
-            state = reader.read().await;
+            let last_state = state;
+            // Wait for next input changes
+            loop {
+                state = reader.read().await;
+
+                if state != last_state {
+                    break;
+                }
+            }
         }
     }
 }
