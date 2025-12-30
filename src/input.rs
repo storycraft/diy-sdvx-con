@@ -1,3 +1,4 @@
+mod debouncer;
 mod reader;
 mod state;
 
