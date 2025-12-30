@@ -168,7 +168,7 @@ impl<'a> ViaCmd<'a> {
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
                 buf.get_mut(..size)
                     .unwrap()
-                    .copy_from_slice(keymap_buf.as_bytes().get(offset..size).unwrap());
+                    .copy_from_slice(keymap_buf.as_bytes().get(offset..(offset + size)).unwrap());
             }
 
             ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
@@ -180,7 +180,7 @@ impl<'a> ViaCmd<'a> {
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
                 keymap_buf
                     .as_mut_bytes()
-                    .get_mut(offset..size)
+                    .get_mut(offset..(offset + size))
                     .unwrap()
                     .copy_from_slice(buf.get(..size).unwrap());
 
