@@ -27,7 +27,7 @@ use embassy_rp::{
 use embassy_time::Timer;
 use static_cell::StaticCell;
 
-use {defmt_rtt as _, panic_halt as _};
+use {defmt_embassy_usbserial as _, panic_halt as _};
 
 bind_interrupts!(struct Irqs {
     USBCTRL_IRQ => embassy_rp::usb::InterruptHandler<USB>;
