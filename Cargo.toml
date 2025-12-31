@@ -32,7 +32,6 @@ embassy-executor = { version = "0.9.1", features = [
 # interface and handlers for Serial, Via, Gamepad, Mouse, Keyboard, Media Control
 embassy-usb = { version = "0.5.1", features = ["defmt", "max-interface-count-7", "max-handler-count-6"] }
 embassy-futures = { version = "0.1.2", features = ["defmt"] }
-embassy-usb-logger = "0.5.1"
 embassy-time = { version = "0.5.0", features = [
   "defmt",
   "defmt-timestamp-uptime",
@@ -40,7 +39,6 @@ embassy-time = { version = "0.5.0", features = [
 
 defmt = "1.0.1"
 panic-halt = "1.0.0"
-log = { version = "0.4.29", features = ["release_max_level_info"] }
 critical-section = "1.2.0"
 defmt-rtt = "1.1.0"
 usbd-hid = { version = "0.8.2", features = ["defmt"] }
@@ -49,6 +47,7 @@ zerocopy = { version = "0.8.31", features = ["derive"] }
 scopeguard = { version = "1.2.0", default-features = false }
 num-traits = { version = "0.2.19", default-features = false }
 num-derive = { version = "0.4.2", default-features = false }
+defmt-embassy-usbserial = "0.2.1"
 
 [package.metadata.embassy]
 build = [

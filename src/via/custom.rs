@@ -48,7 +48,7 @@ impl ViaCmd<'_> {
         let value_id = self.data[1];
         match value_id {
             ValueId::REBOOT_BOOTSEL => {
-                log::info!("BOOTSEL Reboot requested.");
+                defmt::info!("BOOTSEL Reboot requested.");
                 // Reboot to BOOTSEL
                 rom_data::reset_to_usb_boot(0, 0);
             }

@@ -38,16 +38,16 @@ bind_interrupts!(struct Irqs {
 async fn main(spawner: Spawner) {
     // Boot Phase
     let p = embassy_rp::init(Default::default());
-    log::info!("System booted.");
+    defmt::info!("System booted.");
 
     // System initialization phase
-    log::info!("Initializing USB driver...");
+    defmt::info!("Initializing USB driver...");
     let driver = UsbDriver::new(p.USB, Irqs);
-    log::info!("USB driver initialized.");
+    defmt::info!("USB driver initialized.");
 
-    log::info!("Initializing Adc...");
+    defmt::info!("Initializing Adc...");
     let adc = Adc::new(p.ADC, Irqs, adc::Config::default());
-    log::info!("Adc initialized.");
+    defmt::info!("Adc initialized.");
 
     // add some delay to give an attached debug probe time to parse the
     // defmt RTT header. Reading that header might touch flash memory, which
@@ -55,19 +55,19 @@ async fn main(spawner: Spawner) {
     // https://github.com/knurling-rs/defmt/pull/683
     Timer::after_millis(10).await;
 
-    log::info!("Initializing userdata...");
+    defmt::info!("Initializing userdata...");
     let userdata_task = init_userdata(p.FLASH, p.DMA_CH1).await;
     spawner.must_spawn(userdata_task);
-    log::info!("Userdata initialized.");
+    defmt::info!("Userdata initialized.");
 
-    log::info!("System initialized.");
+    defmt::info!("System initialized.");
 
     // Controller initialization phase
-    log::info!("Initializing Controller...");
+    defmt::info!("Initializing Controller...");
 
-    log::info!("Initializing Core 1...");
+    defmt::info!("Initializing Core 1...");
     start_core1(p.CORE1, |spawner| {
-        log::info!("Initializing LED...");
+        defmt::info!("Initializing LED...");
         spawner.must_spawn(led_task(LedConfig {
             pins: LedPinout {
                 button_1: p.PIN_8,
@@ -79,11 +79,11 @@ async fn main(spawner: Spawner) {
                 start: p.PIN_14,
             },
         }));
-        log::info!("LED initialized.");
+        defmt::info!("LED initialized.");
     });
-    log::info!("Core 1 initialized.");
+    defmt::info!("Core 1 initialized.");
 
-    log::info!("Controller started.");
+    defmt::info!("Controller started.");
     usb_task(
         InputConfig {
             adc,

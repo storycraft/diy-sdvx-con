@@ -34,19 +34,19 @@ pub fn via_task<'a, D: Driver<'a>>(
         let mut buf = [0_u8; 32];
         loop {
             if let Err(e) = reader.read(&mut buf).await {
-                log::error!("Failed to send via report err:{:?}", e);
+                defmt::error!("Failed to send via report err:{:?}", e);
                 continue;
             }
 
             let Some(cmd) = ViaCmd::from_raw(&mut buf) else {
-                log::error!("Failed parse via report");
+                defmt::error!("Failed parse via report");
                 continue;
             };
 
             cmd.invoke().await;
 
             if let Err(err) = writer.write(&buf).await {
-                log::error!("Failed to write via report. err: {:?}", err);
+                defmt::error!("Failed to write via report. err: {:?}", err);
             }
         }
     }
@@ -92,7 +92,7 @@ impl<'a> ViaCmd<'a> {
                     .unwrap()
                     .0
                     .version = GetProtocolVersion::CURRENT_VERSION.into();
-                log::info!("Via connected.");
+                defmt::info!("Via connected.");
             }
 
             ViaCmdId::GET_KEYBOARD_VALUE => {
@@ -117,7 +117,7 @@ impl<'a> ViaCmd<'a> {
                     set_keymap_keycode(&mut userdata.keymap, cmd.row, cmd.col, key);
                 });
                 userdata::save();
-                log::info!(
+                defmt::info!(
                     "Keycode at row: {} col: {} updated to key: {:#06X}",
                     cmd.row,
                     cmd.col,
@@ -129,7 +129,7 @@ impl<'a> ViaCmd<'a> {
                 userdata::update(|userdata| {
                     userdata.keymap = Keymap::DEFAULT;
                 });
-                log::info!("Keymap resetted to default.");
+                defmt::info!("Keymap resetted to default.");
             }
 
             ViaCmdId::CUSTOM_GET_VALUE => {
@@ -206,7 +206,7 @@ impl<'a> ViaCmd<'a> {
             }
 
             _ => {
-                log::warn!("Invalid via command recevied: {:#04X}", *self.id);
+                defmt::warn!("Invalid via command recevied: {:#04X}", *self.id);
                 *self.id = ViaCmdId::UNHANDLED;
             }
         }

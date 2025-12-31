@@ -85,7 +85,7 @@ pub async fn init_userdata(
     let userdata = match io.init().await {
         Ok(data) => data,
         Err(e) => {
-            log::error!("Userdata initialization failed error: {e:?}. Fallback to default.");
+            defmt::error!("Userdata initialization failed error: {:?}. Fallback to default.", e);
             Userdata::default()
         }
     };
@@ -104,11 +104,11 @@ async fn userdata_task(mut io: UserdataIo<'static>) {
 
         match io.save(&get(|userdata| userdata.clone())).await {
             Ok(_) => {
-                log::info!("Userdata saved.");
+                defmt::info!("Userdata saved.");
             }
 
             Err(e) => {
-                log::error!("Failed to save userdata. error: {e:?}");
+                defmt::error!("Failed to save userdata. error: {:?}", e);
             }
         }
 

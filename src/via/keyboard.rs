@@ -33,7 +33,7 @@ impl ViaCmd<'_> {
 
             _ => {
                 *self.id = ViaCmdId::UNHANDLED;
-                log::warn!("Invalid via keyboard value requested: {value_id:#04X}");
+                defmt::warn!("Invalid via keyboard value requested: {=u8:04X}", value_id);
             }
         }
     }

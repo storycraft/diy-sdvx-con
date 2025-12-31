@@ -118,7 +118,7 @@ pub fn input_task<'a, D: Driver<'a>>(
 
             match writer.gamepad.write_serialize(&input_report(input)).await {
                 Ok(()) => {}
-                Err(e) => log::error!("Failed to send input report: {:?}", e),
+                Err(e) => defmt::error!("Failed to send input report: {:?}", e),
             };
 
             let last_state = state;

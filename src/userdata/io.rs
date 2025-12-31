@@ -42,7 +42,7 @@ impl<'a> UserdataIo<'a> {
             Some(data) => Ok(data),
             // Saved data is invalid or failed to read
             None => {
-                log::info!("Userdata is invalid. Performing initialization.");
+                defmt::info!("Userdata is invalid. Performing initialization.");
                 let userdata = Userdata::default();
                 self.save(&userdata).await?;
                 Ok(userdata)

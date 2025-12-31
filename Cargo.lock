@@ -268,6 +268,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "defmt-embassy-usbserial"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fc694abdabcdda69dd086a1affe85ec6c333338c55f0e28bdefdcedf9393bd1"
+dependencies = [
+ "critical-section",
+ "defmt 1.0.1",
+ "embassy-futures",
+ "embassy-time",
+ "embassy-usb",
+ "portable-atomic",
+ "static_cell",
+]
+
+[[package]]
 name = "defmt-macros"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -530,18 +545,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "embassy-usb-logger"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deed6d36715838d6adbbff13b215b03a9deeaa66a64d5fccd6353708ccfb8b8f"
-dependencies = [
- "embassy-futures",
- "embassy-sync",
- "embassy-usb",
- "log",
-]
-
-[[package]]
 name = "embedded-hal"
 version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -635,6 +638,7 @@ dependencies = [
  "cortex-m-rt",
  "critical-section",
  "defmt 1.0.1",
+ "defmt-embassy-usbserial",
  "defmt-rtt",
  "embassy-executor",
  "embassy-futures",
@@ -642,9 +646,7 @@ dependencies = [
  "embassy-sync",
  "embassy-time",
  "embassy-usb",
- "embassy-usb-logger",
  "embedded-hal 1.0.0",
- "log",
  "num-derive",
  "num-traits",
  "panic-halt",
