@@ -11,7 +11,6 @@ use embassy_rp::{
     gpio::{Input, Level, Pin, Pull},
     peripherals::*,
 };
-use embassy_time::{Duration, Ticker};
 use embassy_usb::class::hid::{self, HidWriter, State};
 use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
@@ -91,7 +90,6 @@ pub fn input_task(
         let mut left_knob_state = KnobState::new(state.left_knob);
         let mut right_knob_state = KnobState::new(state.right_knob);
 
-        let mut ticker = Ticker::every(Duration::from_millis(10));
         let mut last_input = ControllerInput::NONE;
         loop {
             let input = ControllerInput {
@@ -122,9 +120,6 @@ pub fn input_task(
                     Ok(()) => {}
                     Err(e) => defmt::error!("Failed to send input report: {:?}", e),
                 };
-
-                // TODO:: remove global input ticker
-                ticker.next().await;
             }
 
             state = reader.read().await;
