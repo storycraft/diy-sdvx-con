@@ -11,6 +11,7 @@ use embassy_rp::{
     gpio::{Input, Level, Pin, Pull},
     peripherals::*,
 };
+use embassy_time::{Duration, Ticker};
 use embassy_usb::class::hid::{self, HidWriter, State};
 use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
@@ -50,7 +51,7 @@ pub struct InputPinout {
     pub right_knob: Peri<'static, PIN_27>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 struct ControllerInput {
     pub button1: Level,
     pub button2: Level,
@@ -61,6 +62,20 @@ struct ControllerInput {
     pub start: Level,
     pub left_knob: KnobTurn,
     pub right_knob: KnobTurn,
+}
+
+impl ControllerInput {
+    pub const NONE: Self = Self {
+        button1: Level::Low,
+        button2: Level::Low,
+        button3: Level::Low,
+        button4: Level::Low,
+        fx1: Level::Low,
+        fx2: Level::Low,
+        start: Level::Low,
+        left_knob: KnobTurn::None,
+        right_knob: KnobTurn::None,
+    };
 }
 
 pub fn input_task(
@@ -75,17 +90,9 @@ pub fn input_task(
         let mut left_knob_state = KnobState::new(state.left_knob);
         let mut right_knob_state = KnobState::new(state.right_knob);
 
+        let mut ticker = Ticker::every(Duration::from_millis(5));
+        let mut last_input = ControllerInput::NONE;
         loop {
-            led::update(LedState {
-                button_1: state.button1,
-                button_2: state.button2,
-                button_3: state.button3,
-                button_4: state.button4,
-                fx_1: state.fx1,
-                fx_2: state.fx2,
-                start: state.start,
-            });
-
             let input = ControllerInput {
                 button1: state.button1,
                 button2: state.button2,
@@ -98,20 +105,28 @@ pub fn input_task(
                 right_knob: right_knob_state.update(state.right_knob),
             };
 
-            match writer.gamepad.write_serialize(&input_report(input)).await {
-                Ok(()) => {}
-                Err(e) => defmt::error!("Failed to send input report: {:?}", e),
-            };
+            if last_input != input {
+                last_input = input;
+                led::update(LedState {
+                    button_1: state.button1,
+                    button_2: state.button2,
+                    button_3: state.button3,
+                    button_4: state.button4,
+                    fx_1: state.fx1,
+                    fx_2: state.fx2,
+                    start: state.start,
+                });
 
-            let last_state = state;
-            // Wait for next input changes
-            loop {
-                state = reader.read().await;
+                match writer.gamepad.write_serialize(&input_report(input)).await {
+                    Ok(()) => {}
+                    Err(e) => defmt::error!("Failed to send input report: {:?}", e),
+                };
 
-                if state != last_state {
-                    break;
-                }
+                // TODO:: remove global input ticker
+                ticker.await;
             }
+
+            state = reader.read().await;
         }
     }
 
@@ -184,11 +199,11 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
 
     let dpad = if input.fx1 == Level::High {
         // FX Left (Dpad down) + Left knob turns
-        5 - (input.left_knob == KnobTurn::Left) as u8 + (input.left_knob == KnobTurn::Right) as u8
+        5 + (input.left_knob == KnobTurn::Left) as u8 - (input.left_knob == KnobTurn::Right) as u8
     } else if input.left_knob == KnobTurn::Left {
-        3 // Left knob left turn (Dpad left)
+        7 // Left knob left turn (Dpad left)
     } else if input.left_knob == KnobTurn::Right {
-        7 // Left knob right turn (Dpad right)
+        3 // Left knob right turn (Dpad right)
     } else {
         0
     };
