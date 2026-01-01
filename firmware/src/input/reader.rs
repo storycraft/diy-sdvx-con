@@ -157,14 +157,46 @@ async fn read_knob<'a>(
 
     let mut knob_left = 0_u32;
     let mut knob_right = 0_u32;
-    for i in 0..KNOB_SAMPLES {
-        knob_left += buf.0[i * 2] as u32;
-        knob_right += buf.0[i * 2 + 1] as u32;
+    for slice in buf.0.windows(6).step_by(2) {
+        let [left1, right1, left2, right2, left3, right3] = *slice else {
+            continue;
+        };
+
+        knob_left += median(left1, left2, left3) as u32;
+        knob_right += median(right1, right2, right3) as u32;
     }
 
-    // Average knob value
-    knob_left /= const { KNOB_SAMPLES as u32 };
-    knob_right /= const { KNOB_SAMPLES as u32 };
+    // Average median knob value
+    knob_left /= const { KNOB_SAMPLES as u32 - 2 };
+    knob_right /= const { KNOB_SAMPLES as u32 - 2 };
 
     (knob_left as u16, knob_right as u16)
+}
+
+fn median(a: u16, b: u16, c: u16) -> u16 {
+    if a >= b {
+        if b >= c {
+            b
+        }
+        // c <= b <= a
+        else if a >= c {
+            c
+        }
+        // b <= c <= a
+        else {
+            a
+        } // b <= a <= c
+    } else {
+        if a >= c {
+            a
+        }
+        // c <= a <= b
+        else if b >= c {
+            c
+        }
+        // a <= c <= b
+        else {
+            b
+        } // a <= b <= c
+    }
 }
