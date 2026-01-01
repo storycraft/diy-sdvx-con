@@ -15,7 +15,7 @@ use embassy_time::{Duration, Ticker};
 use embassy_usb::class::hid::{self, HidWriter, State};
 use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
-use zerocopy::native_endian;
+use zerocopy::little_endian;
 
 use crate::{
     input::{
@@ -91,7 +91,7 @@ pub fn input_task(
         let mut left_knob_state = KnobState::new(state.left_knob);
         let mut right_knob_state = KnobState::new(state.right_knob);
 
-        let mut ticker = Ticker::every(Duration::from_millis(5));
+        let mut ticker = Ticker::every(Duration::from_millis(10));
         let mut last_input = ControllerInput::NONE;
         loop {
             let input = ControllerInput {
@@ -209,7 +209,10 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
         0
     };
 
-    GamepadInputReport { buttons: little_endian::U16::new(buttons), dpad }
+    GamepadInputReport {
+        buttons: little_endian::U16::new(buttons),
+        dpad,
+    }
 }
 
 #[inline(always)]
