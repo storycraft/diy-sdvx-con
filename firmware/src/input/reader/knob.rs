@@ -38,7 +38,7 @@ impl KnobFilter {
 
         // Check if movement is in threshold range.
         if delta.abs() < THRESHOLD_VALUE {
-            // Prevent changes in threshold range.
+            // Prevent changes in throttle time.
             if self.timer != Duration::MIN {
                 self.timer = self.timer.checked_sub(elapsed).unwrap_or(Duration::MIN);
                 return self.last_turn;
