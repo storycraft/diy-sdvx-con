@@ -12,7 +12,7 @@ impl ValueId {
 }
 
 impl ViaCmd<'_> {
-    pub fn read_custom_get_value(mut self) {
+    pub fn read_custom_get_value(self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel
@@ -35,7 +35,7 @@ impl ViaCmd<'_> {
         }
     }
 
-    pub fn read_custom_set_value(mut self) {
+    pub fn read_custom_set_value(self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel
@@ -59,7 +59,7 @@ impl ViaCmd<'_> {
         }
     }
 
-    pub fn read_custom_save(mut self) {
+    pub fn read_custom_save(self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel

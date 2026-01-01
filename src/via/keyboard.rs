@@ -1,6 +1,6 @@
 use embassy_time::Instant;
 
-use crate::via::{ViaCmd, ViaCmdId};
+use crate::via::ViaCmd;
 
 /// Via keyboard value id from
 /// https://github.com/qmk/qmk_firmware/blob/acbeec29dab5331fe914f35a53d6b43325881e4d/quantum/via.h#L79
@@ -18,7 +18,7 @@ impl ViaKeyboardValueId {
 const VIA_FIRMWARE_VERSION: u32 = 0x00000000;
 
 impl ViaCmd<'_> {
-    pub fn read_via_keyboard_value(mut self) {
+    pub fn read_via_keyboard_value(self) {
         let value_id = self.data[0];
 
         match value_id {

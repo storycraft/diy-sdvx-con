@@ -95,11 +95,11 @@ impl<'a> ViaCmd<'a> {
     }
 
     #[inline]
-    pub fn set_invalid(&mut self) {
+    pub fn set_invalid(self) {
         *self.id = ViaCmdId::UNHANDLED;
     }
 
-    pub async fn invoke(mut self) {
+    pub async fn invoke(self) {
         match *self.id {
             ViaCmdId::GET_PROTOCOL_VERSION => {
                 GetProtocolVersion::mut_from_prefix(self.data)
