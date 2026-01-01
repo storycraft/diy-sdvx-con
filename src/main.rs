@@ -12,7 +12,7 @@ mod via;
 use crate::{
     input::{InputConfig, InputPinout},
     led::{LedConfig, LedPinout, led_task},
-    usb::usb_task,
+    usb::init_usb,
     userdata::init_userdata,
 };
 use embassy_executor::{Executor, Spawner};
@@ -65,26 +65,9 @@ async fn main(spawner: Spawner) {
     // Controller initialization phase
     defmt::info!("Initializing Controller...");
 
-    defmt::info!("Initializing Core 1...");
-    start_core1(p.CORE1, |spawner| {
-        defmt::info!("Initializing LED...");
-        spawner.must_spawn(led_task(LedConfig {
-            pins: LedPinout {
-                button_1: p.PIN_8,
-                button_2: p.PIN_9,
-                button_3: p.PIN_10,
-                button_4: p.PIN_11,
-                fx_1: p.PIN_12,
-                fx_2: p.PIN_13,
-                start: p.PIN_14,
-            },
-        }));
-        defmt::info!("LED initialized.");
-    });
-    defmt::info!("Core 1 initialized.");
-
-    defmt::info!("Controller started.");
-    usb_task(
+    defmt::info!("Initializing USB...");
+    let usb_task = init_usb(
+        spawner,
         InputConfig {
             adc,
             dma: p.DMA_CH0,
@@ -104,8 +87,29 @@ async fn main(spawner: Spawner) {
             },
         },
         driver,
-    )
-    .await;
+    );
+    defmt::info!("USB Initialized.");
+
+    defmt::info!("Initializing Core 1...");
+    start_core1(p.CORE1, |spawner| {
+        defmt::info!("Initializing LED...");
+        spawner.must_spawn(led_task(LedConfig {
+            pins: LedPinout {
+                button_1: p.PIN_8,
+                button_2: p.PIN_9,
+                button_3: p.PIN_10,
+                button_4: p.PIN_11,
+                fx_1: p.PIN_12,
+                fx_2: p.PIN_13,
+                start: p.PIN_14,
+            },
+        }));
+        defmt::info!("LED initialized.");
+    });
+    defmt::info!("Core 1 initialized.");
+
+    defmt::info!("Controller started.");
+    usb_task.await;
 }
 
 fn start_core1(core1: Peri<'static, CORE1>, f: impl FnOnce(Spawner) + 'static + Send) {

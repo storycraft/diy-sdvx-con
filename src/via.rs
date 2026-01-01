@@ -4,16 +4,15 @@ mod encoder;
 mod keyboard;
 mod keymap;
 
-use embassy_usb::{
-    class::hid::{self, HidReaderWriter},
-    driver::Driver,
-};
+use embassy_executor::SpawnToken;
+use embassy_usb::class::hid::{HidReaderWriter, State};
 use num_traits::FromPrimitive;
+use static_cell::StaticCell;
 use zerocopy::{FromBytes, IntoBytes, big_endian};
 
 use crate::{
     keycode::Keycode,
-    usb,
+    usb::{self, Driver, hid::QmkRawHidReport},
     userdata::{self, keymap::Keymap},
     via::{
         cmds::*,
@@ -22,16 +21,15 @@ use crate::{
     },
 };
 
-pub fn via_task<'a, D: Driver<'a>>(
-    state: &'a mut hid::State<'a>,
-    builder: &mut embassy_usb::Builder<'a, D>,
-) -> impl Future<Output = ()> + use<'a, D> {
-    let mut io = HidReaderWriter::<_, 32, 32>::new(builder, state, usb::config::via());
-    async move {
+pub fn via_task(
+    builder: &mut embassy_usb::Builder<'static, Driver>,
+) -> SpawnToken<impl Sized + use<>> {
+    #[embassy_executor::task]
+    async fn inner(mut io: HidReaderWriter<'static, Driver, 32, 32>) {
         io.ready().await;
         let (mut reader, mut writer) = io.split();
 
-        let mut buf = [0_u8; 32];
+        let mut buf = [0_u8; { size_of::<QmkRawHidReport>() }];
         loop {
             if let Err(e) = reader.read(&mut buf).await {
                 defmt::error!("Failed to send via report err:{:?}", e);
@@ -50,6 +48,16 @@ pub fn via_task<'a, D: Driver<'a>>(
             }
         }
     }
+
+    let io = HidReaderWriter::<_, { size_of::<QmkRawHidReport>() }, { size_of::<QmkRawHidReport>() }>::new(
+        builder,
+        {
+            static STATE: StaticCell<State> = StaticCell::new();
+            STATE.init(State::new())
+        },
+        usb::config::via(),
+    );
+    inner(io)
 }
 
 /// Via command ids from

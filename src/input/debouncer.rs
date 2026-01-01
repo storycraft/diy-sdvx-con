@@ -95,7 +95,10 @@ mod tests {
         let mut debouncer = ButtonDebouncer::<5>::new(false);
         for (i, (raw_state, debounced_state)) in input_seq.into_iter().enumerate() {
             println!("{i}");
-            assert_eq!(debouncer.debounce(raw_state, Duration::from_millis(1)), debounced_state);
+            assert_eq!(
+                debouncer.debounce(raw_state, Duration::from_millis(1)),
+                debounced_state
+            );
         }
     }
 }

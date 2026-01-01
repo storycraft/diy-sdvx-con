@@ -1,4 +1,5 @@
 use usbd_hid::descriptor::{SerializedDescriptor, generator_prelude::*};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 /// HID report and descriptor for a gamepad with buttons and D-pad.
 pub struct GamepadInputReport {
@@ -72,6 +73,7 @@ impl AsInputReport for GamepadInputReport {}
         };
     }
 )]
+#[derive(FromBytes, IntoBytes, Immutable)]
 /// Raw HID report compatible with QMK Raw HID.
 pub struct QmkRawHidReport {
     pub data: [u8; 32],

@@ -1,5 +1,6 @@
-use embassy_futures::join::join4;
+use embassy_executor::Spawner;
 use embassy_rp::{peripherals::USB, usb::Driver as UsbDriver};
+use static_cell::StaticCell;
 
 use crate::{
     input::{InputConfig, input_task},
@@ -10,36 +11,38 @@ use crate::{
 pub mod config;
 pub mod hid;
 
-pub async fn usb_task(input_config: InputConfig, driver: UsbDriver<'static, USB>) {
-    // Allocates descriptor and control buffer
-    let mut config_descriptor = [0; 256];
-    let mut bos_descriptor = [0; 256];
-    let mut msos_descriptor = [0; 256];
-    let mut control_buf = [0; { config::DEVICE.max_packet_size_0 as usize }];
+pub type Driver = UsbDriver<'static, USB>;
 
-    // Setup function class states
-    let mut hid_states = [const { embassy_usb::class::hid::State::new() }; 4];
-    let mut via_state = embassy_usb::class::hid::State::new();
-    let mut serial_state = embassy_usb::class::cdc_acm::State::new();
+pub fn init_usb(
+    spawner: Spawner,
+    input_config: InputConfig,
+    driver: Driver,
+) -> impl Future + 'static {
+    // Allocates descriptor and control buffer
+    static CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+    static BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+    static MSOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+    static CONTROL_BUF: StaticCell<[u8; config::DEVICE.max_packet_size_0 as usize]> =
+        StaticCell::new();
 
     let mut builder = embassy_usb::Builder::new(
         driver,
         config::DEVICE,
-        &mut config_descriptor,
-        &mut bos_descriptor,
-        &mut msos_descriptor,
-        &mut control_buf,
+        CONFIG_DESCRIPTOR.init([0; _]),
+        BOS_DESCRIPTOR.init([0; _]),
+        MSOS_DESCRIPTOR.init([0; _]),
+        CONTROL_BUF.init([0; _]),
     );
 
     // Setup HID input task
-    let input_task = input_task(input_config, &mut hid_states, &mut builder);
+    spawner.must_spawn(input_task(input_config, &mut builder));
 
     // Setup via task
-    let via_task = via_task(&mut via_state, &mut builder);
+    spawner.must_spawn(via_task(&mut builder));
 
     // Setup logger task
-    let logger_task = logger_task(&mut serial_state, &mut builder);
-    let mut device = builder.build();
+    spawner.must_spawn(logger_task(&mut builder));
 
-    join4(device.run(), logger_task, input_task, via_task).await;
+    let mut device = builder.build();
+    async move { device.run().await }
 }

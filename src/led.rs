@@ -55,7 +55,7 @@ impl Default for LedState {
 static LED_STATE: Signal<CriticalSectionRawMutex, LedState> = Signal::new();
 
 #[inline]
-pub fn update<'a>(led: LedState) {
+pub fn update(led: LedState) {
     LED_STATE.signal(led);
 }
 

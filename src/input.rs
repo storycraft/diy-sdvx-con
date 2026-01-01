@@ -3,6 +3,7 @@ mod debouncer;
 mod reader;
 mod state;
 
+use embassy_executor::SpawnToken;
 use embassy_futures::join::join4;
 use embassy_rp::{
     Peri,
@@ -10,10 +11,8 @@ use embassy_rp::{
     gpio::{Input, Level, Pin, Pull},
     peripherals::*,
 };
-use embassy_usb::{
-    class::hid::{self, HidWriter},
-    driver::Driver,
-};
+use embassy_usb::class::hid::{self, HidWriter, State};
+use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 
 use crate::{
@@ -22,7 +21,7 @@ use crate::{
         state::{KnobState, KnobTurn},
     },
     led::{self, LedState},
-    usb::{self, hid::GamepadInputReport},
+    usb::{self, Driver, hid::GamepadInputReport},
 };
 
 pub struct InputConfig {
@@ -64,29 +63,12 @@ struct ControllerInput {
     pub right_knob: KnobTurn,
 }
 
-pub fn input_task<'a, D: Driver<'a>>(
+pub fn input_task(
     cfg: InputConfig,
-    states: &'a mut [hid::State<'a>; 4],
-    builder: &mut embassy_usb::Builder<'a, D>,
-) -> impl Future<Output = ()> + use<'a, D> {
-    let mut writer = HidInputWriter::new(builder, states);
-
-    let inputs = InputDriver {
-        button1: button(cfg.pins.button1),
-        button2: button(cfg.pins.button2),
-        button3: button(cfg.pins.button3),
-        button4: button(cfg.pins.button4),
-        fx1: button(cfg.pins.fx1),
-        fx2: button(cfg.pins.fx2),
-        start: button(cfg.pins.start),
-        knobs: [
-            adc::Channel::new_pin(cfg.pins.left_knob, Pull::None),
-            adc::Channel::new_pin(cfg.pins.right_knob, Pull::None),
-        ],
-    };
-    let mut reader = InputReader::new(cfg.adc, cfg.dma, inputs);
-
-    async move {
+    builder: &mut embassy_usb::Builder<'static, Driver>,
+) -> SpawnToken<impl Sized + use<>> {
+    #[embassy_executor::task]
+    async fn inner(mut reader: InputReader<'static>, mut writer: HidInputWriter) {
         writer.ready().await;
 
         let mut state = reader.read().await;
@@ -132,19 +114,41 @@ pub fn input_task<'a, D: Driver<'a>>(
             }
         }
     }
+
+    let inputs = InputDriver {
+        button1: button(cfg.pins.button1),
+        button2: button(cfg.pins.button2),
+        button3: button(cfg.pins.button3),
+        button4: button(cfg.pins.button4),
+        fx1: button(cfg.pins.fx1),
+        fx2: button(cfg.pins.fx2),
+        start: button(cfg.pins.start),
+        knobs: [
+            adc::Channel::new_pin(cfg.pins.left_knob, Pull::None),
+            adc::Channel::new_pin(cfg.pins.right_knob, Pull::None),
+        ],
+    };
+    let reader = InputReader::new(cfg.adc, cfg.dma, inputs);
+
+    let writer = HidInputWriter::new(builder, {
+        static STATES: StaticCell<[State; 4]> = StaticCell::new();
+        STATES.init([const { State::new() }; 4])
+    });
+
+    inner(reader, writer)
 }
 
-pub struct HidInputWriter<'a, D: Driver<'a>> {
-    pub gamepad: HidWriter<'a, D, { size_of::<GamepadInputReport>() }>,
-    pub keyboard: HidWriter<'a, D, { size_of::<KeyboardReport>() }>,
-    pub mouse: HidWriter<'a, D, { size_of::<MouseReport>() }>,
-    pub media: HidWriter<'a, D, { size_of::<MediaKeyboardReport>() }>,
+pub struct HidInputWriter {
+    pub gamepad: HidWriter<'static, Driver, { size_of::<GamepadInputReport>() }>,
+    pub keyboard: HidWriter<'static, Driver, { size_of::<KeyboardReport>() }>,
+    pub mouse: HidWriter<'static, Driver, { size_of::<MouseReport>() }>,
+    pub media: HidWriter<'static, Driver, { size_of::<MediaKeyboardReport>() }>,
 }
 
-impl<'a, D: Driver<'a>> HidInputWriter<'a, D> {
+impl HidInputWriter {
     pub fn new(
-        builder: &mut embassy_usb::Builder<'a, D>,
-        states: &'a mut [hid::State<'a>; 4],
+        builder: &mut embassy_usb::Builder<'static, Driver>,
+        states: &'static mut [hid::State<'static>; 4],
     ) -> Self {
         let [gamepad_state, keyboard_state, mouse_state, media_state] = states;
 

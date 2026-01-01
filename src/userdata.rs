@@ -85,7 +85,10 @@ pub async fn init_userdata(
     let userdata = match io.init().await {
         Ok(data) => data,
         Err(e) => {
-            defmt::error!("Userdata initialization failed error: {:?}. Fallback to default.", e);
+            defmt::error!(
+                "Userdata initialization failed error: {:?}. Fallback to default.",
+                e
+            );
             Userdata::default()
         }
     };
