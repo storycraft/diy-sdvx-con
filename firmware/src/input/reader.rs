@@ -159,7 +159,7 @@ async fn read_knob<'a>(
     let mut knob_right = 0_u32;
     for slice in buf.0.windows(6).step_by(2) {
         let [left1, right1, left2, right2, left3, right3] = *slice else {
-            continue;
+            unreachable!()
         };
 
         knob_left += median(left1, left2, left3) as u32;
