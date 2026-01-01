@@ -23,7 +23,7 @@ impl KnobFilter {
 
     pub fn update(&mut self, raw_value: u16, elapsed: Duration) -> KnobTurn {
         const THRESHOLD_VALUE: i16 = 20;
-        const THROTTLE_DURATION: Duration = Duration::from_millis(50);
+        const THROTTLE_DURATION: Duration = Duration::from_millis(40);
 
         let delta = {
             let d = raw_value as i16 - self.last_value as i16;
