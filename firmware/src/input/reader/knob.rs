@@ -27,9 +27,9 @@ impl KnobFilter {
 
         let delta = {
             let d = raw_value as i16 - self.last_value as i16;
-            if d > 2048 {
+            if d >= 2048 {
                 d - 4096
-            } else if d < -2048 {
+            } else if d <= -2048 {
                 d + 4096
             } else {
                 d
