@@ -1,3 +1,6 @@
+mod button;
+mod knob;
+
 use embassy_rp::{
     Peri,
     adc::{self, Adc},
@@ -7,7 +10,11 @@ use embassy_rp::{
 };
 use embassy_time::{Duration, Instant};
 
-use crate::input::{config::DEBOUNCE_MS, debouncer::ButtonDebouncer};
+use crate::input::{
+    KnobTurn,
+    config::DEBOUNCE_MS,
+    reader::{button::ButtonDebouncer, knob::KnobFilter},
+};
 
 pub struct InputReader<'a> {
     last_read: Instant,
@@ -20,6 +27,8 @@ pub struct InputReader<'a> {
     dma: Peri<'a, DMA_CH0>,
     /// Knob oversample buffer
     knob_buf: KnobBuffer,
+    left_knob: KnobFilter,
+    right_knob: KnobFilter,
 }
 
 impl<'a> InputReader<'a> {
@@ -32,6 +41,8 @@ impl<'a> InputReader<'a> {
             adc,
             dma,
             knob_buf: KnobBuffer::new(),
+            left_knob: KnobFilter::new(0),
+            right_knob: KnobFilter::new(0),
         }
     }
 
@@ -66,8 +77,8 @@ impl<'a> InputReader<'a> {
             fx1,
             fx2,
             start,
-            left_knob,
-            right_knob,
+            left_knob: self.left_knob.update(left_knob, elapsed),
+            right_knob: self.right_knob.update(right_knob, elapsed),
         }
     }
 }
@@ -84,8 +95,8 @@ pub struct InputRead {
 
     pub start: Level,
 
-    pub left_knob: u16,
-    pub right_knob: u16,
+    pub left_knob: KnobTurn,
+    pub right_knob: KnobTurn,
 }
 
 pub struct InputDriver<'a> {
@@ -120,7 +131,7 @@ impl<'a> DebouncedInput<'a> {
     }
 }
 
-const KNOB_SAMPLES: usize = 256;
+const KNOB_SAMPLES: usize = 64;
 
 #[repr(transparent)]
 struct KnobBuffer([u16; 2 * KNOB_SAMPLES]);

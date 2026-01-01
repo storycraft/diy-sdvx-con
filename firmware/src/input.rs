@@ -1,7 +1,5 @@
 mod config;
-mod debouncer;
 mod reader;
-mod state;
 
 use embassy_executor::SpawnToken;
 use embassy_futures::join::join4;
@@ -17,10 +15,7 @@ use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 use zerocopy::little_endian;
 
 use crate::{
-    input::{
-        reader::{DebouncedInput, InputDriver, InputReader},
-        state::{KnobState, KnobTurn},
-    },
+    input::reader::{DebouncedInput, InputDriver, InputRead, InputReader},
     led::{self, LedState},
     usb::{self, Driver, hid::GamepadInputReport},
 };
@@ -34,6 +29,14 @@ pub struct InputConfig {
 
     /// Button and knob pinout
     pub pins: InputPinout,
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum KnobTurn {
+    #[default]
+    None,
+    Left,
+    Right,
 }
 
 pub struct InputPinout {
@@ -51,33 +54,6 @@ pub struct InputPinout {
     pub right_knob: Peri<'static, PIN_27>,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-struct ControllerInput {
-    pub button1: Level,
-    pub button2: Level,
-    pub button3: Level,
-    pub button4: Level,
-    pub fx1: Level,
-    pub fx2: Level,
-    pub start: Level,
-    pub left_knob: KnobTurn,
-    pub right_knob: KnobTurn,
-}
-
-impl ControllerInput {
-    pub const NONE: Self = Self {
-        button1: Level::Low,
-        button2: Level::Low,
-        button3: Level::Low,
-        button4: Level::Low,
-        fx1: Level::Low,
-        fx2: Level::Low,
-        start: Level::Low,
-        left_knob: KnobTurn::None,
-        right_knob: KnobTurn::None,
-    };
-}
-
 pub fn input_task(
     cfg: InputConfig,
     builder: &mut embassy_usb::Builder<'static, Driver>,
@@ -86,43 +62,30 @@ pub fn input_task(
     async fn inner(mut reader: InputReader<'static>, mut writer: HidInputWriter) {
         writer.ready().await;
 
-        let mut state = reader.read().await;
-        let mut left_knob_state = KnobState::new(state.left_knob);
-        let mut right_knob_state = KnobState::new(state.right_knob);
-
-        let mut last_input = ControllerInput::NONE;
+        let mut read = reader.read().await;
         loop {
-            let input = ControllerInput {
-                button1: state.button1,
-                button2: state.button2,
-                button3: state.button3,
-                button4: state.button4,
-                fx1: state.fx1,
-                fx2: state.fx2,
-                start: state.start,
-                left_knob: left_knob_state.update(state.left_knob),
-                right_knob: right_knob_state.update(state.right_knob),
+            led::update(LedState {
+                button_1: read.button1,
+                button_2: read.button2,
+                button_3: read.button3,
+                button_4: read.button4,
+                fx_1: read.fx1,
+                fx_2: read.fx2,
+                start: read.start,
+            });
+
+            match writer.gamepad.write_serialize(&input_report(read)).await {
+                Ok(()) => {}
+                Err(e) => defmt::error!("Failed to send input report: {:?}", e),
             };
 
-            if last_input != input {
-                last_input = input;
-                led::update(LedState {
-                    button_1: state.button1,
-                    button_2: state.button2,
-                    button_3: state.button3,
-                    button_4: state.button4,
-                    fx_1: state.fx1,
-                    fx_2: state.fx2,
-                    start: state.start,
-                });
-
-                match writer.gamepad.write_serialize(&input_report(input)).await {
-                    Ok(()) => {}
-                    Err(e) => defmt::error!("Failed to send input report: {:?}", e),
-                };
+            loop {
+                let next_read = reader.read().await;
+                if next_read != read {
+                    read = next_read;
+                    break;
+                }
             }
-
-            state = reader.read().await;
         }
     }
 
@@ -183,7 +146,7 @@ impl HidInputWriter {
 }
 
 #[inline(always)]
-fn input_report(input: ControllerInput) -> GamepadInputReport {
+fn input_report(input: InputRead) -> GamepadInputReport {
     let buttons: u16 = ((input.button1 == Level::High) as u16) << 6 // A Button (Button 7)
                 | ((input.button2 == Level::High) as u16) << 4 // B Button (Button 5)
                 | ((input.button3 == Level::High) as u16) << 5 // C Button (Button 6)
