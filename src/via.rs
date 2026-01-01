@@ -180,10 +180,16 @@ impl<'a> ViaCmd<'a> {
 
                 let keymap_buf =
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
-                // TODO:: out of range handling
-                buf.get_mut(..size)
-                    .unwrap()
-                    .copy_from_slice(keymap_buf.as_bytes().get(offset..(offset + size)).unwrap());
+
+                let Some(src) = keymap_buf.as_bytes().get(offset..(offset + size)) else {
+                    self.set_invalid();
+                    return;
+                };
+                let Some(dst) = buf.get_mut(..size) else {
+                    self.set_invalid();
+                    return;
+                };
+                dst.copy_from_slice(src);
             }
 
             ViaCmdId::DYNAMIC_KEYMAP_SET_BUFFER => {
@@ -193,12 +199,16 @@ impl<'a> ViaCmd<'a> {
 
                 let mut keymap_buf =
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
-                // TODO:: out of range handling
-                keymap_buf
-                    .as_mut_bytes()
-                    .get_mut(offset..(offset + size))
-                    .unwrap()
-                    .copy_from_slice(buf.get(..size).unwrap());
+
+                let Some(dst) = keymap_buf.as_mut_bytes().get_mut(offset..(offset + size)) else {
+                    self.set_invalid();
+                    return;
+                };
+                let Some(src) = buf.get(..size) else {
+                    self.set_invalid();
+                    return;
+                };
+                dst.copy_from_slice(src);
 
                 userdata::update(|userdata| keymap_buf.apply_keymap(&mut userdata.keymap));
                 userdata::save();
