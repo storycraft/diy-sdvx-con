@@ -89,17 +89,17 @@ struct ViaCmd<'a> {
 
 impl<'a> ViaCmd<'a> {
     #[inline]
-    pub fn from_raw(raw: &'a mut [u8]) -> Option<Self> {
+    fn from_raw(raw: &'a mut [u8]) -> Option<Self> {
         let (id, data) = raw.split_first_mut().unwrap();
         Some(Self { id, data })
     }
 
     #[inline]
-    pub fn set_invalid(self) {
+    fn set_invalid(self) {
         *self.id = ViaCmdId::UNHANDLED;
     }
 
-    pub async fn invoke(self) {
+    async fn invoke(self) {
         match *self.id {
             ViaCmdId::GET_PROTOCOL_VERSION => {
                 GetProtocolVersion::mut_from_prefix(self.data)
