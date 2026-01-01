@@ -180,6 +180,7 @@ impl<'a> ViaCmd<'a> {
 
                 let keymap_buf =
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
+                // TODO:: out of range handling
                 buf.get_mut(..size)
                     .unwrap()
                     .copy_from_slice(keymap_buf.as_bytes().get(offset..(offset + size)).unwrap());
@@ -192,6 +193,7 @@ impl<'a> ViaCmd<'a> {
 
                 let mut keymap_buf =
                     userdata::get(|userdata| KeymapBuffer::from_keymap(&userdata.keymap));
+                // TODO:: out of range handling
                 keymap_buf
                     .as_mut_bytes()
                     .get_mut(offset..(offset + size))
