@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["./firmware"]
+members = ["firmware", "keycodes"]
 
 [profile.release]
 lto = true
