@@ -1,5 +1,2 @@
-[target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "picotool load --update --verify --execute -t elf"
-
-[build]
-target = "thumbv8m.main-none-eabihf"
+[alias]
+flash = "run --config ./firmware/.cargo/config.toml -p firmware"

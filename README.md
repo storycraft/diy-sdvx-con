@@ -12,9 +12,9 @@ DIY SDVX Controller Firmware for RP235X microcontroller family.
 - picotool (for flashing the firmware)
 
 ## Flashing
-To build and flash firmware, use the following command:
+To build and flash firmware, use the following command on workspace root:
 ```bash
-cargo run --release
+cargo flash --release
 ```
 
 ## GPIO Pinouts

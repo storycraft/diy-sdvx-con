@@ -2,9 +2,6 @@
 resolver = "3"
 members = ["firmware", "keycode-gen"]
 
-[profile.release]
-lto = true
-
 [workspace.package]
 authors = ["storycraft <storycraft@pancake.sh>"]
 publish = false
