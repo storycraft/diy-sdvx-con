@@ -7,7 +7,7 @@ pub struct GamepadInputReport {
     pub buttons: u16,
 
     /// D-pad state (0-8)
-    /// 0: centered, 1: up, 2: up-left, 3: left, 4: down-left, 5: down, 6: down-right, 7: right, 8: up-right
+    /// 0: centered, 1: up, 2: up-right, 3: right, 4: down-right, 5: down, 6: down-left, 7: left, 8: up-left
     pub dpad: u8,
 }
 
