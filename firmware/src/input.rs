@@ -123,7 +123,7 @@ pub fn input_task(
                 };
 
                 // TODO:: remove global input ticker
-                ticker.await;
+                ticker.next().await;
             }
 
             state = reader.read().await;
