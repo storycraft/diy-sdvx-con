@@ -5,7 +5,6 @@ use embassy_time::Duration;
 /// The debouncer algorithm instantly react to button press,
 /// but apply defer debouncing on release.
 /// It gives lowest latency and some noise resistance.
-/// TODO:: remove [`Duration`]
 pub struct ButtonDebouncer<const DEBOUNCE_MS: u8> {
     release_last_raw_value: bool,
     debounced: bool,
