@@ -88,12 +88,18 @@ struct ViaCmd<'a> {
 }
 
 impl<'a> ViaCmd<'a> {
+    #[inline]
     pub fn from_raw(raw: &'a mut [u8]) -> Option<Self> {
         let (id, data) = raw.split_first_mut().unwrap();
         Some(Self { id, data })
     }
 
-    pub async fn invoke(self) {
+    #[inline]
+    pub fn set_invalid(&mut self) {
+        *self.id = ViaCmdId::UNHANDLED;
+    }
+
+    pub async fn invoke(mut self) {
         match *self.id {
             ViaCmdId::GET_PROTOCOL_VERSION => {
                 GetProtocolVersion::mut_from_prefix(self.data)
@@ -215,7 +221,7 @@ impl<'a> ViaCmd<'a> {
 
             _ => {
                 defmt::warn!("Invalid via command recevied: {:#04X}", *self.id);
-                *self.id = ViaCmdId::UNHANDLED;
+                self.set_invalid();
             }
         }
     }

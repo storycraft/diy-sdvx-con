@@ -18,7 +18,7 @@ impl ViaKeyboardValueId {
 const VIA_FIRMWARE_VERSION: u32 = 0x00000000;
 
 impl ViaCmd<'_> {
-    pub fn read_via_keyboard_value(self) {
+    pub fn read_via_keyboard_value(mut self) {
         let value_id = self.data[0];
 
         match value_id {
@@ -32,7 +32,7 @@ impl ViaCmd<'_> {
             }
 
             _ => {
-                *self.id = ViaCmdId::UNHANDLED;
+                self.set_invalid();
                 defmt::warn!("Invalid via keyboard value requested: {=u8:04X}", value_id);
             }
         }

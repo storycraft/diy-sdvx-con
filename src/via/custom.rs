@@ -2,7 +2,7 @@ use embassy_rp::rom_data;
 
 use crate::{
     userdata::{self},
-    via::{ViaCmd, ViaCmdId},
+    via::ViaCmd,
 };
 
 struct ValueId;
@@ -12,13 +12,13 @@ impl ValueId {
 }
 
 impl ViaCmd<'_> {
-    pub fn read_custom_get_value(self) {
+    pub fn read_custom_get_value(mut self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel
         // We will only use user defined channel so ignore rest
         if channel_id != 0 {
-            *self.id = ViaCmdId::UNHANDLED;
+            self.set_invalid();
             return;
         }
 
@@ -30,18 +30,18 @@ impl ViaCmd<'_> {
             }
 
             _ => {
-                *self.id = ViaCmdId::UNHANDLED;
+                self.set_invalid();
             }
         }
     }
 
-    pub fn read_custom_set_value(self) {
+    pub fn read_custom_set_value(mut self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel
         // We will only use user defined channel so ignore rest
         if channel_id != 0 {
-            *self.id = ViaCmdId::UNHANDLED;
+            self.set_invalid();
             return;
         }
 
@@ -54,18 +54,18 @@ impl ViaCmd<'_> {
             }
 
             _ => {
-                *self.id = ViaCmdId::UNHANDLED;
+                self.set_invalid();
             }
         }
     }
 
-    pub fn read_custom_save(self) {
+    pub fn read_custom_save(mut self) {
         let channel_id = self.data[0];
 
         // 0 for custom user defined channel
         // We will only use user defined channel so ignore rest
         if channel_id != 0 {
-            *self.id = ViaCmdId::UNHANDLED;
+            self.set_invalid();
             return;
         }
 
