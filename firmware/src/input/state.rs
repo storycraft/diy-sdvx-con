@@ -1,29 +1,31 @@
 pub struct KnobState {
-    last: u8,
+    last: u16,
 }
 
 impl KnobState {
     /// Create new [`KnobState`] with initial knob value
     #[inline]
-    pub const fn new(initial: u8) -> Self {
+    pub const fn new(initial: u16) -> Self {
         Self { last: initial }
     }
 
-    pub fn update(&mut self, now: u8) -> KnobTurn {
+    pub fn update(&mut self, now: u16) -> KnobTurn {
         let d = now as i16 - self.last as i16;
-        self.last = now;
 
-        let delta = if d > 127 {
-            d - 256
-        } else if d < -127 {
-            d + 256
+        let delta = if d > 2048 {
+            d - 4096
+        } else if d < -2048 {
+            d + 4096
         } else {
             d
-        } as i8;
+        };
 
-        if delta == 0 {
-            KnobTurn::None
-        } else if delta < 0 {
+        if delta.abs() <= 16 {
+            return KnobTurn::None;
+        }
+        self.last = now;
+
+        if delta < 0 {
             KnobTurn::Left
         } else {
             KnobTurn::Right

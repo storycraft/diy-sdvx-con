@@ -84,8 +84,8 @@ pub struct InputRead {
 
     pub start: Level,
 
-    pub left_knob: u8,
-    pub right_knob: u8,
+    pub left_knob: u16,
+    pub right_knob: u16,
 }
 
 pub struct InputDriver<'a> {
@@ -138,7 +138,7 @@ async fn read_knob<'a>(
     dma: &mut Peri<'a, impl dma::Channel>,
     knobs: &mut [adc::Channel<'a>; 2],
     buf: &mut KnobBuffer,
-) -> (u8, u8) {
+) -> (u16, u16) {
     // Perform adc multi read
     adc.read_many_multichannel(knobs, &mut buf.0, 0, dma.reborrow())
         .await
@@ -151,11 +151,9 @@ async fn read_knob<'a>(
         knob_right += buf.0[i * 2 + 1] as u32;
     }
 
-    // Average knob value and smooth the ranges from 0 to 255
+    // Average knob value
     knob_left /= const { KNOB_SAMPLES as u32 };
-    knob_left >>= 4;
     knob_right /= const { KNOB_SAMPLES as u32 };
-    knob_right >>= 4;
 
-    (knob_left as u8, knob_right as u8)
+    (knob_left as u16, knob_right as u16)
 }
