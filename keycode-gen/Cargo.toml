@@ -1,5 +1,5 @@
 [package]
-name = "keycodes"
+name = "keycode-gen"
 authors.workspace = true
 publish.workspace = true
 version.workspace = true

@@ -771,7 +771,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "keycodes"
+name = "keycode-gen"
 version = "0.1.0"
 
 [[package]]
