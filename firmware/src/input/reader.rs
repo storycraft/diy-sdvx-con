@@ -131,7 +131,7 @@ impl<'a> DebouncedInput<'a> {
     }
 }
 
-const KNOB_SAMPLES: usize = 64;
+const KNOB_SAMPLES: usize = 32;
 
 #[repr(transparent)]
 struct KnobBuffer([u16; 2 * KNOB_SAMPLES]);
