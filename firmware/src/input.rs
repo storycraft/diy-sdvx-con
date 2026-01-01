@@ -15,6 +15,7 @@ use embassy_time::{Duration, Ticker};
 use embassy_usb::class::hid::{self, HidWriter, State};
 use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
+use zerocopy::native_endian;
 
 use crate::{
     input::{
@@ -208,7 +209,7 @@ fn input_report(input: ControllerInput) -> GamepadInputReport {
         0
     };
 
-    GamepadInputReport { buttons, dpad }
+    GamepadInputReport { buttons: little_endian::U16::new(buttons), dpad }
 }
 
 #[inline(always)]

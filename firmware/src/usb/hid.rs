@@ -1,10 +1,10 @@
 use usbd_hid::descriptor::{SerializedDescriptor, generator_prelude::*};
-use zerocopy::{FromBytes, Immutable, IntoBytes};
+use zerocopy::{FromBytes, Immutable, IntoBytes, little_endian};
 
 /// HID report and descriptor for a gamepad with buttons and D-pad.
 pub struct GamepadInputReport {
     /// Button states from button 1 to button 16
-    pub buttons: u16,
+    pub buttons: little_endian::U16,
 
     /// D-pad state (0-8)
     /// 0: centered, 1: up, 2: up-right, 3: right, 4: down-right, 5: down, 6: down-left, 7: left, 8: up-left
@@ -55,7 +55,7 @@ impl Serialize for GamepadInputReport {
         S: Serializer,
     {
         let mut s = serializer.serialize_tuple(2)?;
-        s.serialize_element(&self.buttons)?;
+        s.serialize_element(&self.buttons.get())?;
         s.serialize_element(&self.dpad)?;
         s.end()
     }
