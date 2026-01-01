@@ -2,6 +2,8 @@ use embassy_time::Duration;
 
 use crate::input::KnobTurn;
 
+/// A filter to reduce noise in the knob value,
+/// preventing the knob value from changing until it reaches the threshold or the throttle time has elapsed.
 pub struct KnobFilter {
     last_value: u16,
     last_turn: KnobTurn,
