@@ -12,4 +12,10 @@ impl From<u16> for Keycode {
     }
 }
 
+impl Default for Keycode {
+    fn default() -> Self {
+        Self::KC_NO
+    }
+}
+
 include!(concat!(env!("OUT_DIR"), "/impl_keycode.rs"));
