@@ -1,9 +1,9 @@
 pub mod config;
 mod reader;
+mod report;
 mod ticker;
-mod writer;
 
-use embassy_executor::SpawnToken;
+use embassy_executor::{SpawnToken, Spawner};
 use embassy_rp::{
     Peri,
     adc::{self, Adc},
@@ -11,8 +11,6 @@ use embassy_rp::{
     peripherals::*,
 };
 use embassy_time::Instant;
-use embassy_usb::class::hid::State;
-use static_cell::StaticCell;
 
 use crate::{
     input::{
@@ -23,7 +21,6 @@ use crate::{
             knob::KnobInputReader,
         },
         ticker::ElapsedTimer,
-        writer::HidInputWriter,
     },
     led::{self, LedState},
     usb::{Driver, hid::GamepadInputReport},
@@ -59,6 +56,7 @@ impl From<i16> for KnobTurn {
 }
 
 pub fn input_task(
+    spawner: Spawner,
     cfg: InputConfig,
     builder: &mut embassy_usb::Builder<'static, Driver>,
 ) -> SpawnToken<impl Sized + use<>> {
@@ -80,22 +78,19 @@ pub fn input_task(
         cfg.dma,
     );
 
-    let writer = HidInputWriter::new(builder, {
-        static STATES: StaticCell<[State; 4]> = StaticCell::new();
-        STATES.init([const { State::new() }; 4])
-    });
+    spawner.must_spawn(report::gamepad_report_task(builder));
+    spawner.must_spawn(report::keyboard_report_task(builder));
+    spawner.must_spawn(report::media_report_task(builder));
+    spawner.must_spawn(report::mouse_report_task(builder));
 
-    task(button_reader, knob_reader, writer)
+    task(button_reader, knob_reader)
 }
 
 #[embassy_executor::task]
 async fn task(
     mut button_reader: ButtonInputReader<'static>,
     mut knob_reader: KnobInputReader<'static>,
-    mut writer: HidInputWriter,
 ) {
-    writer.ready().await;
-
     let mut ticker = ElapsedTimer::new(Instant::now());
     let mut read = InputRead {
         knobs: knob_reader.read(0).await,
@@ -112,10 +107,7 @@ async fn task(
             start: read.buttons.start,
         });
 
-        match writer.gamepad.write_serialize(&input_report(read)).await {
-            Ok(()) => {}
-            Err(e) => defmt::error!("Failed to send input report: {:?}", e),
-        };
+        report::GAMEPAD.signal(input_report(read));
 
         loop {
             let elapsed_ms = ticker.next_elapsed_ms();

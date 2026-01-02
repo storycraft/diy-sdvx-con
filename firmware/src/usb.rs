@@ -35,7 +35,7 @@ pub fn init_usb(
     );
 
     // Setup HID input task
-    spawner.must_spawn(input_task(input_config, &mut builder));
+    spawner.must_spawn(input_task(spawner, input_config, &mut builder));
 
     // Setup via task
     spawner.must_spawn(via_task(&mut builder));
