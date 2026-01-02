@@ -1,11 +1,9 @@
-pub mod builder;
-
 use keycode::Keycode;
-use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport};
+use usbd_hid::descriptor::MediaKeyboardReport;
 
 use crate::{
     input::{
-        key::builder::{GamepadInputBuilder, MouseInputBuilder},
+        builder::{GamepadInputBuilder, KeyboardInputBuilder, MouseInputBuilder},
         report,
     },
     keycodes,
@@ -14,7 +12,7 @@ use crate::{
 #[derive(Default)]
 pub struct InputReports {
     gamepad: Option<GamepadInputBuilder>,
-    keyboard: Option<KeyboardReport>,
+    keyboard: Option<KeyboardInputBuilder>,
     media: Option<MediaKeyboardReport>,
     mouse: Option<MouseInputBuilder>,
 }
@@ -26,7 +24,7 @@ impl InputReports {
         }
 
         if let Some(keyboard) = self.keyboard {
-            report::KEYBOARD.signal(keyboard);
+            report::KEYBOARD.signal(keyboard.build());
         }
 
         if let Some(mouse) = self.mouse {
@@ -46,7 +44,9 @@ impl InputReports {
         const MOUSE_KEY_END: u16 = Keycode::QK_MOUSE_ACCELERATION_2.0;
 
         match code.0 {
-            Keycode::RANGE_QK_BASIC_START..MOUSE_KEY_START => {}
+            Keycode::RANGE_QK_BASIC_START..MOUSE_KEY_START => {
+                self.keyboard(code, pressed);
+            }
 
             MOUSE_KEY_START..=MOUSE_KEY_END => self.mouse(code, pressed),
 
@@ -137,6 +137,30 @@ impl InputReports {
             }
 
             _ => {}
+        }
+    }
+
+    fn keyboard(&mut self, code: Keycode, pressed: bool) {
+        const SCAN_CODE_START: u16 = Keycode::KC_A.0;
+        const SCAN_CODE_END: u16 = Keycode::KC_EXSEL.0;
+        const MODIFIER_START: u16 = Keycode::KC_LEFT_CTRL.0;
+        const MODIFIER_END: u16 = Keycode::KC_RIGHT_GUI.0;
+        const _: () = const { assert!(1 + MODIFIER_END - MODIFIER_START == 8) };
+
+        let keyboard = self.keyboard.get_or_insert_default();
+        if !pressed {
+            return;
+        }
+        match code {
+            Keycode(SCAN_CODE_START..=SCAN_CODE_END) => {
+                keyboard.key(code.0 as u8);
+            }
+
+            Keycode(MODIFIER_START..=MODIFIER_END) => {
+                keyboard.modifier((code.0 - MODIFIER_START) as u8);
+            }
+    
+            _ => {},
         }
     }
 }

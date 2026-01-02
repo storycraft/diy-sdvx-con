@@ -3,6 +3,7 @@ mod key;
 mod reader;
 mod report;
 mod ticker;
+mod builder;
 
 use embassy_executor::{SpawnToken, Spawner};
 use embassy_futures::join::join;

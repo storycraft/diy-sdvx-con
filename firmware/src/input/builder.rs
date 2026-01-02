@@ -1,4 +1,4 @@
-use usbd_hid::descriptor::MouseReport;
+use usbd_hid::descriptor::{KeyboardReport, MouseReport};
 
 use crate::{input::config, usb::hid::GamepadInputReport};
 
@@ -89,7 +89,7 @@ impl MouseInputBuilder {
     pub fn cursor_down(&mut self) {
         self.0.y += config::MOUSE_CURSOR_SPEED;
     }
-    
+
     #[inline]
     pub fn cursor_left(&mut self) {
         self.0.x -= config::MOUSE_CURSOR_SPEED;
@@ -100,7 +100,6 @@ impl MouseInputBuilder {
         self.0.x += config::MOUSE_CURSOR_SPEED;
     }
 
-    
     #[inline]
     pub fn wheel_up(&mut self) {
         self.0.wheel += config::MOUSE_WHEEL_SPEED;
@@ -110,7 +109,7 @@ impl MouseInputBuilder {
     pub fn wheel_down(&mut self) {
         self.0.wheel -= config::MOUSE_WHEEL_SPEED;
     }
-    
+
     #[inline]
     pub fn wheel_left(&mut self) {
         self.0.pan += config::MOUSE_WHEEL_SPEED;
@@ -120,7 +119,7 @@ impl MouseInputBuilder {
     pub fn wheel_right(&mut self) {
         self.0.pan -= config::MOUSE_WHEEL_SPEED;
     }
-    
+
     #[inline]
     pub fn button(&mut self, n: u8) {
         self.0.buttons |= 1 << n;
@@ -141,5 +140,46 @@ impl Default for MouseInputBuilder {
             wheel: 0,
             pan: 0,
         })
+    }
+}
+
+pub struct KeyboardInputBuilder {
+    inner: KeyboardReport,
+    next_key_index: usize,
+}
+
+impl KeyboardInputBuilder {
+    #[inline]
+    pub fn key(&mut self, code: u8) {
+        let index = self.next_key_index;
+        if index >= self.inner.keycodes.len() {
+            return;
+        }
+        self.next_key_index += 1;
+        self.inner.keycodes[index] = code;
+    }
+
+    #[inline]
+    pub fn modifier(&mut self, n: u8) {
+        self.inner.modifier |= 1 << n;
+    }
+
+    #[inline]
+    pub const fn build(self) -> KeyboardReport {
+        self.inner
+    }
+}
+
+impl Default for KeyboardInputBuilder {
+    fn default() -> Self {
+        Self {
+            inner: KeyboardReport {
+                modifier: 0,
+                reserved: 0,
+                leds: 0,
+                keycodes: [0; _],
+            },
+            next_key_index: 0,
+        }
     }
 }
