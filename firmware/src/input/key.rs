@@ -38,7 +38,7 @@ impl InputReports {
         }
     }
 
-    pub fn press_key(&mut self, code: Keycode) {
+    pub fn key(&mut self, code: Keycode, pressed: bool) {
         const GAMEPAD_KEY_START: u16 = keycodes::JOY_BTN1.0;
         const GAMEPAD_KEY_END: u16 = keycodes::DPAD_RIGHT.0;
 
@@ -48,83 +48,92 @@ impl InputReports {
         match code.0 {
             Keycode::RANGE_QK_BASIC_START..MOUSE_KEY_START => {}
 
-            MOUSE_KEY_START..=MOUSE_KEY_END => self.mouse(code),
+            MOUSE_KEY_START..=MOUSE_KEY_END => self.mouse(code, pressed),
 
-            GAMEPAD_KEY_START..=GAMEPAD_KEY_END => self.gamepad(code),
+            GAMEPAD_KEY_START..=GAMEPAD_KEY_END => self.gamepad(code, pressed),
 
             _ => {}
         }
     }
 
     #[inline(always)]
-    fn gamepad(&mut self, code: Keycode) {
+    fn gamepad(&mut self, code: Keycode, pressed: bool) {
+        const BUTTON_START: u16 = keycodes::JOY_BTN1.0;
+        const BUTTON_END: u16 = keycodes::JOY_BTN16.0;
+
+        let gamepad = self.gamepad.get_or_insert_default();
+        if !pressed {
+            return;
+        }
         match code {
             keycodes::DPAD_UP => {
-                self.gamepad.get_or_insert_default().dpad_up();
+                gamepad.dpad_up();
             }
 
             keycodes::DPAD_LEFT => {
-                self.gamepad.get_or_insert_default().dpad_left();
+                gamepad.dpad_left();
             }
 
             keycodes::DPAD_DOWN => {
-                self.gamepad.get_or_insert_default().dpad_down();
+                gamepad.dpad_down();
             }
 
             keycodes::DPAD_RIGHT => {
-                self.gamepad.get_or_insert_default().dpad_right();
+                gamepad.dpad_right();
             }
 
-            Keycode(offset) => {
-                self.gamepad
-                    .get_or_insert_default()
-                    .button((offset - keycodes::JOY_BTN1.0) as u8);
+            Keycode(BUTTON_START..=BUTTON_END) => {
+                gamepad.button((code.0 - keycodes::JOY_BTN1.0) as u8);
             }
+
+            _ => {}
         }
     }
 
     #[inline(always)]
-    fn mouse(&mut self, code: Keycode) {
+    fn mouse(&mut self, code: Keycode, pressed: bool) {
         const BUTTON_START: u16 = Keycode::QK_MOUSE_BUTTON_1.0;
         const BUTTON_END: u16 = Keycode::QK_MOUSE_BUTTON_8.0;
 
+        let mouse = self.mouse.get_or_insert_default();
+        if !pressed {
+            return;
+        }
         match code {
             Keycode::QK_MOUSE_CURSOR_UP => {
-                self.mouse.get_or_insert_default().cursor_up();
+                mouse.cursor_up();
             }
 
             Keycode::QK_MOUSE_CURSOR_DOWN => {
-                self.mouse.get_or_insert_default().cursor_down();
+                mouse.cursor_down();
             }
 
             Keycode::QK_MOUSE_CURSOR_LEFT => {
-                self.mouse.get_or_insert_default().cursor_left();
+                mouse.cursor_left();
             }
 
             Keycode::QK_MOUSE_CURSOR_RIGHT => {
-                self.mouse.get_or_insert_default().cursor_right();
+                mouse.cursor_right();
             }
 
             Keycode::QK_MOUSE_WHEEL_UP => {
-                self.mouse.get_or_insert_default().wheel_up();
+                mouse.wheel_up();
             }
 
             Keycode::QK_MOUSE_WHEEL_DOWN => {
-                self.mouse.get_or_insert_default().wheel_down();
+                mouse.wheel_down();
             }
 
             Keycode::QK_MOUSE_WHEEL_LEFT => {
-                self.mouse.get_or_insert_default().wheel_left();
+                mouse.wheel_left();
             }
 
             Keycode::QK_MOUSE_WHEEL_RIGHT => {
-                self.mouse.get_or_insert_default().wheel_right();
+                mouse.wheel_right();
             }
 
             Keycode(BUTTON_START..=BUTTON_END) => {
-                self.mouse
-                    .get_or_insert_default()
-                    .button((code.0 - BUTTON_START) as _);
+                mouse.button((code.0 - BUTTON_START) as _);
             }
 
             _ => {}

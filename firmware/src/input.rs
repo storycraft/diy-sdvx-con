@@ -14,8 +14,6 @@ use embassy_rp::{
 };
 use embassy_sync::blocking_mutex::{NoopMutex, raw::NoopRawMutex};
 use embassy_time::Instant;
-use keycode::Keycode;
-use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 
 use crate::{
     input::{
@@ -29,7 +27,7 @@ use crate::{
         ticker::ElapsedTimer,
     },
     led::{self, LedState},
-    usb::{Driver, hid::GamepadInputReport},
+    usb::Driver,
     userdata::{self, keymap::Keymap},
 };
 
@@ -168,45 +166,19 @@ async fn keymap_updater(keymap: &NoopMutex<Keymap>) {
 fn report_inputs(keymap: &Keymap, input: InputRead) {
     let mut reports = InputReports::default();
 
-    if input.buttons.button1 == Level::High {
-        reports.press_key(keymap.button1);
-    }
+    reports.key(keymap.button1, input.buttons.button1 == Level::High);
+    reports.key(keymap.button2, input.buttons.button2 == Level::High);
+    reports.key(keymap.button3, input.buttons.button3 == Level::High);
+    reports.key(keymap.button4, input.buttons.button4 == Level::High);
+    reports.key(keymap.fx1, input.buttons.fx1 == Level::High);
+    reports.key(keymap.fx2, input.buttons.fx2 == Level::High);
+    reports.key(keymap.start, input.buttons.start == Level::High);
 
-    if input.buttons.button2 == Level::High {
-        reports.press_key(keymap.button2);
-    }
+    reports.key(keymap.left_knob_left, input.knobs.0 == KnobTurn::Left);
+    reports.key(keymap.left_knob_right, input.knobs.0 == KnobTurn::Right);
 
-    if input.buttons.button3 == Level::High {
-        reports.press_key(keymap.button3);
-    }
-
-    if input.buttons.button4 == Level::High {
-        reports.press_key(keymap.button4);
-    }
-
-    if input.buttons.fx1 == Level::High {
-        reports.press_key(keymap.fx1);
-    }
-
-    if input.buttons.fx2 == Level::High {
-        reports.press_key(keymap.fx2);
-    }
-
-    if input.buttons.start == Level::High {
-        reports.press_key(keymap.start);
-    }
-
-    if input.knobs.0 == KnobTurn::Left {
-        reports.press_key(keymap.left_knob_left);
-    } else if input.knobs.0 == KnobTurn::Right {
-        reports.press_key(keymap.left_knob_right);
-    }
-
-    if input.knobs.1 == KnobTurn::Left {
-        reports.press_key(keymap.right_knob_left);
-    } else if input.knobs.1 == KnobTurn::Right {
-        reports.press_key(keymap.right_knob_right);
-    }
+    reports.key(keymap.right_knob_left, input.knobs.1 == KnobTurn::Left);
+    reports.key(keymap.right_knob_right, input.knobs.1 == KnobTurn::Right);
 
     reports.send();
 }
