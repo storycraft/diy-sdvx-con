@@ -39,7 +39,7 @@ pub enum AliasIns {
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct KeyRange {
     pub start: u16,
-    pub end: u16,
+    pub size: u16,
 }
 
 impl serde::Serialize for KeyRange {
@@ -47,7 +47,7 @@ impl serde::Serialize for KeyRange {
     where
         S: serde::Serializer,
     {
-        serializer.serialize_str(&format!("{:#04X}/{:#04X}", self.start, self.end))
+        serializer.serialize_str(&format!("{:#04X}/{:#04X}", self.start, self.size))
     }
 }
 
@@ -82,7 +82,7 @@ impl<'de> serde::Deserialize<'de> for KeyRange {
                 let (_, [start, end]) = captures.extract();
                 Ok(KeyRange {
                     start: u16::from_str_radix(start, 16).unwrap(),
-                    end: u16::from_str_radix(end, 16).unwrap(),
+                    size: u16::from_str_radix(end, 16).unwrap(),
                 })
             }
         }

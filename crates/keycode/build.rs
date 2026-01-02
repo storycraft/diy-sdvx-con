@@ -21,9 +21,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let name = format_ident!("{}", def.key);
         let keycode = u16::from_str_radix(&key[2..], 16).expect("invalid keycode");
-        let desc = def.label.unwrap_or_default();
+        let desc = def.label.map(|label| {
+            quote!(#[doc = #label])
+        });
         Some(quote! {
-            #[doc = #desc]
+            #desc
             pub const #name: Self = Self(#keycode);
         })
     });
@@ -33,10 +35,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
 
         let name = format_ident!("RANGE_{}", define);
-        let KeyRange { start, end } = key;
-        Some(quote! {
-            pub const #name: ::core::ops::Range<u16> = #start..#end;
-        })
+        let KeyRange { start, size } = key;
+        let end = start + size;
+        Some(quote!(pub const #name: ::core::ops::Range<u16> = #start..#end;))
     });
 
     let tokens = quote! {
