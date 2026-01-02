@@ -7,6 +7,8 @@ edition = "2024"
 license = "GPL-2.0"
 
 [dependencies]
+filter = { path = "../crates/filter" }
+
 embedded-hal = "1.0.0"
 
 cortex-m = { version = "0.7.7", features = ["inline-asm"] }
@@ -28,7 +30,11 @@ embassy-executor = { version = "0.9.1", features = [
   "defmt",
 ] }
 # interface and handlers for Serial, Via, Gamepad, Mouse, Keyboard, Media Control
-embassy-usb = { version = "0.5.1", features = ["defmt", "max-interface-count-7", "max-handler-count-6"] }
+embassy-usb = { version = "0.5.1", features = [
+  "defmt",
+  "max-interface-count-7",
+  "max-handler-count-6",
+] }
 embassy-futures = { version = "0.1.2", features = ["defmt"] }
 embassy-time = { version = "0.5.0", features = [
   "defmt",

@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "xtask"]
-default-members = []
 exclude = ["firmware"]
 
 [workspace.package]

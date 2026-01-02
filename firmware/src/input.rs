@@ -15,7 +15,7 @@ use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 use zerocopy::little_endian;
 
 use crate::{
-    input::reader::{DebouncedInput, InputDriver, InputRead, InputReader},
+    input::reader::{Button, InputDriver, InputRead, InputReader},
     led::{self, LedState},
     usb::{self, Driver, hid::GamepadInputReport},
 };
@@ -37,6 +37,16 @@ pub enum KnobTurn {
     None,
     Left,
     Right,
+}
+
+impl From<i16> for KnobTurn {
+    fn from(value: i16) -> Self {
+        match value {
+            0 => Self::None,
+            ..0 => Self::Left,
+            0.. => Self::Right,
+        }
+    }
 }
 
 pub struct InputPinout {
@@ -174,9 +184,9 @@ fn input_report(input: InputRead) -> GamepadInputReport {
 }
 
 #[inline(always)]
-fn button<'a>(pin: Peri<'a, impl Pin>) -> DebouncedInput<'a> {
+fn button<'a>(pin: Peri<'a, impl Pin>) -> Button<'a> {
     let mut input = Input::new(pin, Pull::Up);
     input.set_schmitt(true);
     input.set_inversion(true);
-    DebouncedInput::new(input)
+    Button::new(input)
 }

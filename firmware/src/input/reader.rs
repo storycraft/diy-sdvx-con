@@ -1,6 +1,3 @@
-mod button;
-mod knob;
-
 use embassy_rp::{
     Peri,
     adc::{self, Adc},
@@ -8,12 +5,11 @@ use embassy_rp::{
     gpio::{Input, Level},
     peripherals::DMA_CH0,
 };
-use embassy_time::{Duration, Instant};
+use embassy_time::Instant;
 
 use crate::input::{
     KnobTurn,
-    config::DEBOUNCE_MS,
-    reader::{button::ButtonDebouncer, knob::KnobFilter},
+    config::{ButtonDebouncer, KnobFilter},
 };
 
 pub struct InputReader<'a> {
@@ -48,8 +44,11 @@ impl<'a> InputReader<'a> {
 
     pub async fn read(&mut self) -> InputRead {
         let now = Instant::now();
-        let elapsed = now.duration_since(self.last_read);
-        self.last_read = now;
+        let duration = now.duration_since(self.last_read);
+        let elapsed = duration.as_millis().min(u16::MAX as _) as u16;
+        if elapsed > 0 {
+            self.last_read = now;
+        }
 
         let button1 = self.inputs.button1.read(elapsed);
         let button2 = self.inputs.button2.read(elapsed);
@@ -77,8 +76,8 @@ impl<'a> InputReader<'a> {
             fx1,
             fx2,
             start,
-            left_knob: self.left_knob.update(left_knob, elapsed),
-            right_knob: self.right_knob.update(right_knob, elapsed),
+            left_knob: KnobTurn::from(self.left_knob.filter(left_knob, elapsed)),
+            right_knob: KnobTurn::from(self.right_knob.filter(right_knob, elapsed)),
         }
     }
 }
@@ -100,25 +99,25 @@ pub struct InputRead {
 }
 
 pub struct InputDriver<'a> {
-    pub button1: DebouncedInput<'a>,
-    pub button2: DebouncedInput<'a>,
-    pub button3: DebouncedInput<'a>,
-    pub button4: DebouncedInput<'a>,
+    pub button1: Button<'a>,
+    pub button2: Button<'a>,
+    pub button3: Button<'a>,
+    pub button4: Button<'a>,
 
-    pub fx1: DebouncedInput<'a>,
-    pub fx2: DebouncedInput<'a>,
+    pub fx1: Button<'a>,
+    pub fx2: Button<'a>,
 
-    pub start: DebouncedInput<'a>,
+    pub start: Button<'a>,
 
     pub knobs: [adc::Channel<'a>; 2],
 }
 
-pub struct DebouncedInput<'a> {
+pub struct Button<'a> {
     input: Input<'a>,
-    debouncer: ButtonDebouncer<DEBOUNCE_MS>,
+    debouncer: ButtonDebouncer,
 }
 
-impl<'a> DebouncedInput<'a> {
+impl<'a> Button<'a> {
     pub const fn new(input: Input<'a>) -> Self {
         Self {
             input,
@@ -126,8 +125,8 @@ impl<'a> DebouncedInput<'a> {
         }
     }
 
-    fn read(&mut self, elapsed: Duration) -> Level {
-        Level::from(self.debouncer.debounce(self.input.is_high(), elapsed))
+    fn read(&mut self, elapsed_ms: u16) -> Level {
+        Level::from(self.debouncer.debounce(self.input.is_high(), elapsed_ms))
     }
 }
 

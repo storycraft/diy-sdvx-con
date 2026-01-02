@@ -1,33 +1,33 @@
-use embassy_time::Duration;
+use core::u16;
 
 /// Debouncer for button.
 ///
 /// The debouncer algorithm instantly react to button press,
 /// but apply defer debouncing on release.
 /// It gives lowest latency and some noise resistance.
-pub struct ButtonDebouncer<const DEBOUNCE_MS: u8> {
+pub struct ButtonDebouncer<const DEBOUNCE_MS: u16> {
     release_last_raw_value: bool,
     debounced: bool,
-    timer: Duration,
+    timer: u16,
 }
 
-impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
+impl<const DEBOUNCE_MS: u16> ButtonDebouncer<DEBOUNCE_MS> {
     pub const fn new(initial: bool) -> Self {
         Self {
             release_last_raw_value: initial,
             debounced: initial,
-            timer: Duration::MAX,
+            timer: 0,
         }
     }
 
-    pub fn debounce(&mut self, raw_state: bool, elapsed: Duration) -> bool {
-        if self.timer != Duration::MIN {
-            self.timer = self.timer.checked_sub(elapsed).unwrap_or(Duration::MIN);
+    pub fn debounce(&mut self, raw_state: bool, elapsed_ms: u16) -> bool {
+        if self.timer != 0 {
+            self.timer = self.timer.saturating_sub(elapsed_ms);
         }
 
         // Reset timer if raw state changes during release debounce time
         if self.debounced && self.release_last_raw_value != raw_state {
-            self.timer = Duration::from_millis(DEBOUNCE_MS as _);
+            self.timer = DEBOUNCE_MS;
             self.release_last_raw_value = raw_state;
             return true;
         }
@@ -39,6 +39,7 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
             // Changes instantly
             (true, false) => {
                 self.debounced = true;
+                self.release_last_raw_value = true;
                 true
             }
 
@@ -46,7 +47,7 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
             // Wait for timer and changes
             (false, true) => {
                 // If timer is not finished, block changes.
-                if self.timer > Duration::MIN {
+                if self.timer > 0 {
                     return true;
                 }
 
@@ -59,9 +60,7 @@ impl<const DEBOUNCE_MS: u8> ButtonDebouncer<DEBOUNCE_MS> {
 
 #[cfg(test)]
 mod tests {
-    use embassy_time::Duration;
-
-    use crate::input::debouncer::ButtonDebouncer;
+    use crate::button::ButtonDebouncer;
 
     #[test]
     fn debouncer_test() {
@@ -95,7 +94,7 @@ mod tests {
         for (i, (raw_state, debounced_state)) in input_seq.into_iter().enumerate() {
             println!("{i}");
             assert_eq!(
-                debouncer.debounce(raw_state, Duration::from_millis(1)),
+                debouncer.debounce(raw_state, 1),
                 debounced_state
             );
         }
