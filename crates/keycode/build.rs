@@ -39,10 +39,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             return None;
         };
 
-        let name = format_ident!("RANGE_{}", define);
+        let start_name = format_ident!("RANGE_{}_START", define);
+        let end_name = format_ident!("RANGE_{}_END", define);
         let KeyRange { start, size } = key;
         let end = start + size;
-        Some(quote!(pub const #name: ::core::ops::Range<u16> = #start..#end;))
+        Some(quote!(
+            pub const #start_name: u16 = #start;
+            pub const #end_name: u16 = #end;
+        ))
     });
 
     let tokens = quote! {
