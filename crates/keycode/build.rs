@@ -46,10 +46,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     });
 
     let tokens = quote! {
-        #[derive(Clone, Copy, Hash, PartialEq, Eq, zerocopy::FromBytes, zerocopy::IntoBytes, zerocopy::Immutable)]
-        #[repr(transparent)]
-        pub struct Keycode(pub u16);
-
         impl Keycode {
             #(#ranges)*
 
@@ -57,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     };
 
-    let file = fs::File::create(PathBuf::from(&out_dir).join("keycode.rs"))?;
+    let file = fs::File::create(PathBuf::from(&out_dir).join("impl_keycode.rs"))?;
     let mut writer = BufWriter::new(file);
     write!(writer, "{}", prettyplease::unparse(&syn::parse2(tokens)?))?;
 
