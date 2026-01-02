@@ -44,7 +44,7 @@ impl<'a> KnobInputReader<'a> {
     pub async fn read(&mut self, elapsed_ms: u16) -> (KnobTurn, KnobTurn) {
         // Perform adc multi read
         self.adc
-            .read_many_multichannel(&mut self.knobs, &mut self.knob_buf, 0, self.dma.reborrow())
+            .read_many_multichannel(&mut self.knobs, &mut self.knob_buf, 96, self.dma.reborrow())
             .await
             .unwrap();
 
