@@ -39,8 +39,8 @@ impl<const THRESHOLD_VALUE: i16, const THROTTLE_DURATION_MS: u16>
                 return self.filtered_delta;
             }
 
-            self.filtered_delta = delta;
-            return delta;
+            self.filtered_delta = 0;
+            return 0;
         }
 
         self.last_raw_value = raw_value;
