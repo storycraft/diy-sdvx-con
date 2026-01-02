@@ -10,7 +10,7 @@ mod userdata;
 mod via;
 
 use crate::{
-    input::{InputConfig, InputPinout},
+    input::{InputConfig, config::InputPinout},
     led::{LedConfig, LedPinout, led_task},
     usb::init_usb,
     userdata::init_userdata,

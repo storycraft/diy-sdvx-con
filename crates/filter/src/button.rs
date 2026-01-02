@@ -1,5 +1,3 @@
-use core::u16;
-
 /// Debouncer for button.
 ///
 /// The debouncer algorithm instantly react to button press,
@@ -93,10 +91,7 @@ mod tests {
         let mut debouncer = ButtonDebouncer::<5>::new(false);
         for (i, (raw_state, debounced_state)) in input_seq.into_iter().enumerate() {
             println!("{i}");
-            assert_eq!(
-                debouncer.debounce(raw_state, 1),
-                debounced_state
-            );
+            assert_eq!(debouncer.debounce(raw_state, 1), debounced_state);
         }
     }
 }

@@ -1,23 +1,33 @@
-mod config;
+pub mod config;
 mod reader;
+mod ticker;
+mod writer;
 
 use embassy_executor::SpawnToken;
-use embassy_futures::join::join4;
 use embassy_rp::{
     Peri,
     adc::{self, Adc},
     gpio::{Input, Level, Pin, Pull},
     peripherals::*,
 };
-use embassy_usb::class::hid::{self, HidWriter, State};
+use embassy_time::Instant;
+use embassy_usb::class::hid::State;
 use static_cell::StaticCell;
-use usbd_hid::descriptor::{KeyboardReport, MediaKeyboardReport, MouseReport};
 use zerocopy::little_endian;
 
 use crate::{
-    input::reader::{Button, InputDriver, InputRead, InputReader},
+    input::{
+        config::InputPinout,
+        reader::{
+            InputRead,
+            button::{Button, ButtonInputReader, Buttons},
+            knob::KnobInputReader,
+        },
+        ticker::ElapsedTimer,
+        writer::HidInputWriter,
+    },
     led::{self, LedState},
-    usb::{self, Driver, hid::GamepadInputReport},
+    usb::{Driver, hid::GamepadInputReport},
 };
 
 pub struct InputConfig {
@@ -28,7 +38,7 @@ pub struct InputConfig {
     pub dma: Peri<'static, DMA_CH0>,
 
     /// Button and knob pinout
-    pub pins: InputPinout,
+    pub pins: InputPinout<'static>,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -44,62 +54,16 @@ impl From<i16> for KnobTurn {
         match value {
             0 => Self::None,
             ..0 => Self::Left,
-            0.. => Self::Right,
+            1.. => Self::Right,
         }
     }
-}
-
-pub struct InputPinout {
-    pub button1: Peri<'static, PIN_0>,
-    pub button2: Peri<'static, PIN_1>,
-    pub button3: Peri<'static, PIN_2>,
-    pub button4: Peri<'static, PIN_3>,
-
-    pub fx1: Peri<'static, PIN_4>,
-    pub fx2: Peri<'static, PIN_5>,
-
-    pub start: Peri<'static, PIN_6>,
-
-    pub left_knob: Peri<'static, PIN_26>,
-    pub right_knob: Peri<'static, PIN_27>,
 }
 
 pub fn input_task(
     cfg: InputConfig,
     builder: &mut embassy_usb::Builder<'static, Driver>,
 ) -> SpawnToken<impl Sized + use<>> {
-    #[embassy_executor::task]
-    async fn inner(mut reader: InputReader<'static>, mut writer: HidInputWriter) {
-        writer.ready().await;
-
-        let mut read = reader.read().await;
-        loop {
-            led::update(LedState {
-                button_1: read.button1,
-                button_2: read.button2,
-                button_3: read.button3,
-                button_4: read.button4,
-                fx_1: read.fx1,
-                fx_2: read.fx2,
-                start: read.start,
-            });
-
-            match writer.gamepad.write_serialize(&input_report(read)).await {
-                Ok(()) => {}
-                Err(e) => defmt::error!("Failed to send input report: {:?}", e),
-            };
-
-            loop {
-                let next_read = reader.read().await;
-                if next_read != read {
-                    read = next_read;
-                    break;
-                }
-            }
-        }
-    }
-
-    let inputs = InputDriver {
+    let button_reader = ButtonInputReader::new(Buttons {
         button1: button(cfg.pins.button1),
         button2: button(cfg.pins.button2),
         button3: button(cfg.pins.button3),
@@ -107,71 +71,85 @@ pub fn input_task(
         fx1: button(cfg.pins.fx1),
         fx2: button(cfg.pins.fx2),
         start: button(cfg.pins.start),
-        knobs: [
+    });
+    let knob_reader = KnobInputReader::new(
+        [
             adc::Channel::new_pin(cfg.pins.left_knob, Pull::None),
             adc::Channel::new_pin(cfg.pins.right_knob, Pull::None),
         ],
-    };
-    let reader = InputReader::new(cfg.adc, cfg.dma, inputs);
+        cfg.adc,
+        cfg.dma,
+    );
 
     let writer = HidInputWriter::new(builder, {
         static STATES: StaticCell<[State; 4]> = StaticCell::new();
         STATES.init([const { State::new() }; 4])
     });
 
-    inner(reader, writer)
+    task(button_reader, knob_reader, writer)
 }
 
-pub struct HidInputWriter {
-    pub gamepad: HidWriter<'static, Driver, { size_of::<GamepadInputReport>() }>,
-    pub keyboard: HidWriter<'static, Driver, { size_of::<KeyboardReport>() }>,
-    pub mouse: HidWriter<'static, Driver, { size_of::<MouseReport>() }>,
-    pub media: HidWriter<'static, Driver, { size_of::<MediaKeyboardReport>() }>,
-}
+#[embassy_executor::task]
+async fn task(
+    mut button_reader: ButtonInputReader<'static>,
+    mut knob_reader: KnobInputReader<'static>,
+    mut writer: HidInputWriter,
+) {
+    writer.ready().await;
 
-impl HidInputWriter {
-    pub fn new(
-        builder: &mut embassy_usb::Builder<'static, Driver>,
-        states: &'static mut [hid::State<'static>; 4],
-    ) -> Self {
-        let [gamepad_state, keyboard_state, mouse_state, media_state] = states;
+    let mut ticker = ElapsedTimer::new(Instant::now());
+    let mut read = InputRead {
+        knobs: knob_reader.read(0).await,
+        buttons: button_reader.read(0),
+    };
+    loop {
+        led::update(LedState {
+            button_1: read.buttons.button1,
+            button_2: read.buttons.button2,
+            button_3: read.buttons.button3,
+            button_4: read.buttons.button4,
+            fx_1: read.buttons.fx1,
+            fx_2: read.buttons.fx2,
+            start: read.buttons.start,
+        });
 
-        Self {
-            gamepad: HidWriter::new(builder, gamepad_state, usb::config::gamepad()),
-            keyboard: HidWriter::new(builder, keyboard_state, usb::config::keyboard()),
-            mouse: HidWriter::new(builder, mouse_state, usb::config::mouse()),
-            media: HidWriter::new(builder, media_state, usb::config::media_control()),
+        match writer.gamepad.write_serialize(&input_report(read)).await {
+            Ok(()) => {}
+            Err(e) => defmt::error!("Failed to send input report: {:?}", e),
+        };
+
+        loop {
+            let elapsed_ms = ticker.next_elapsed_ms();
+            let next_read = InputRead {
+                knobs: knob_reader.read(elapsed_ms).await,
+                buttons: button_reader.read(elapsed_ms),
+            };
+
+            if next_read != read {
+                read = next_read;
+                break;
+            }
         }
-    }
-
-    async fn ready(&mut self) {
-        join4(
-            self.gamepad.ready(),
-            self.keyboard.ready(),
-            self.mouse.ready(),
-            self.media.ready(),
-        )
-        .await;
     }
 }
 
 #[inline(always)]
 fn input_report(input: InputRead) -> GamepadInputReport {
-    let buttons: u16 = ((input.button1 == Level::High) as u16) << 6 // A Button (Button 7)
-                | ((input.button2 == Level::High) as u16) << 4 // B Button (Button 5)
-                | ((input.button3 == Level::High) as u16) << 5 // C Button (Button 6)
-                | ((input.button4 == Level::High) as u16) << 7 // D Button (Button 8)
-                | ((input.fx2 == Level::High) as u16) << 1 // FX Right (Button 2)
-                | ((input.start == Level::High) as u16) << 9 // Start (Button 10)
-                | ((input.right_knob == KnobTurn::Left) as u16) // Right knob left turn (Button 1)
-                | ((input.right_knob == KnobTurn::Right) as u16) << 2; // Right knob right turn (Button 3)
+    let buttons: u16 = ((input.buttons.button1 == Level::High) as u16) << 6 // A Button (Button 7)
+                | ((input.buttons.button2 == Level::High) as u16) << 4 // B Button (Button 5)
+                | ((input.buttons.button3 == Level::High) as u16) << 5 // C Button (Button 6)
+                | ((input.buttons.button4 == Level::High) as u16) << 7 // D Button (Button 8)
+                | ((input.buttons.fx2 == Level::High) as u16) << 1 // FX Right (Button 2)
+                | ((input.buttons.start == Level::High) as u16) << 9 // Start (Button 10)
+                | ((input.knobs.1 == KnobTurn::Left) as u16) // Right knob left turn (Button 1)
+                | ((input.knobs.1 == KnobTurn::Right) as u16) << 2; // Right knob right turn (Button 3)
 
-    let dpad = if input.fx1 == Level::High {
+    let dpad = if input.buttons.fx1 == Level::High {
         // FX Left (Dpad down) + Left knob turns
-        5 + (input.left_knob == KnobTurn::Left) as u8 - (input.left_knob == KnobTurn::Right) as u8
-    } else if input.left_knob == KnobTurn::Left {
+        5 + (input.knobs.0 == KnobTurn::Left) as u8 - (input.knobs.0 == KnobTurn::Right) as u8
+    } else if input.knobs.0 == KnobTurn::Left {
         7 // Left knob left turn (Dpad left)
-    } else if input.left_knob == KnobTurn::Right {
+    } else if input.knobs.0 == KnobTurn::Right {
         3 // Left knob right turn (Dpad right)
     } else {
         0

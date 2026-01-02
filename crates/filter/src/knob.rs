@@ -35,7 +35,7 @@ impl<const THRESHOLD_VALUE: i16, const THROTTLE_DURATION_MS: u16>
         if delta.abs() < THRESHOLD_VALUE {
             // Prevent changes in throttle time.
             if self.timer != 0 {
-                self.timer = self.timer.checked_sub(elapsed_ms).unwrap_or(0);
+                self.timer = self.timer.saturating_sub(elapsed_ms);
                 return self.filtered_delta;
             }
 
