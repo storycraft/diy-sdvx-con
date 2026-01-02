@@ -1,14 +1,87 @@
 use usbd_hid::descriptor::{SerializedDescriptor, generator_prelude::*};
-use zerocopy::{FromBytes, Immutable, IntoBytes, little_endian};
+use zerocopy::{FromBytes, Immutable, IntoBytes};
 
 /// HID report and descriptor for a gamepad with buttons and D-pad.
+#[derive(Default)]
 pub struct GamepadInputReport {
     /// Button states from button 1 to button 16
-    pub buttons: little_endian::U16,
+    pub buttons: u16,
 
     /// D-pad state (0-8)
     /// 0: centered, 1: up, 2: up-right, 3: right, 4: down-right, 5: down, 6: down-left, 7: left, 8: up-left
     pub dpad: u8,
+}
+
+impl GamepadInputReport {
+    #[inline]
+    pub fn button<const N: u8>(&mut self) -> &mut Self {
+        self.buttons |= 1 << const { N - 1 };
+        self
+    }
+
+    #[inline]
+    pub fn dpad_up(&mut self) -> &mut Self {
+        self.dpad = match self.dpad {
+            // centered
+            0 => 1,
+            // up
+            1 | 2 | 8 => self.dpad,
+            // left
+            7 => 8,
+            // right
+            3 => 2,
+            _ => 0,
+        };
+        self
+    }
+
+    #[inline]
+    pub fn dpad_down(&mut self) -> &mut Self {
+        self.dpad = match self.dpad {
+            // centered
+            0 => 5,
+            // down
+            4 | 5 | 6 => self.dpad,
+            // left
+            7 => 6,
+            // right
+            3 => 4,
+            _ => 0,
+        };
+        self
+    }
+
+    #[inline]
+    pub fn dpad_left(&mut self) -> &mut Self {
+        self.dpad = match self.dpad {
+            // centered
+            0 => 7,
+            // left
+            6 | 7 | 8 => self.dpad,
+            // up
+            1 => 8,
+            // down
+            5 => 6,
+            _ => 0,
+        };
+        self
+    }
+
+    #[inline]
+    pub fn dpad_right(&mut self) -> &mut Self {
+        self.dpad = match self.dpad {
+            // centered
+            0 => 3,
+            // left
+            2 | 3 | 4 => self.dpad,
+            // up
+            1 => 2,
+            // down
+            5 => 4,
+            _ => 0,
+        };
+        self
+    }
 }
 
 impl SerializedDescriptor for GamepadInputReport {
@@ -55,7 +128,7 @@ impl Serialize for GamepadInputReport {
         S: Serializer,
     {
         let mut s = serializer.serialize_tuple(2)?;
-        s.serialize_element(&self.buttons.get())?;
+        s.serialize_element(&self.buttons)?;
         s.serialize_element(&self.dpad)?;
         s.end()
     }

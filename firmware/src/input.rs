@@ -13,7 +13,6 @@ use embassy_rp::{
 use embassy_time::Instant;
 use embassy_usb::class::hid::State;
 use static_cell::StaticCell;
-use zerocopy::little_endian;
 
 use crate::{
     input::{
@@ -135,30 +134,49 @@ async fn task(
 
 #[inline(always)]
 fn input_report(input: InputRead) -> GamepadInputReport {
-    let buttons: u16 = ((input.buttons.button1 == Level::High) as u16) << 6 // A Button (Button 7)
-                | ((input.buttons.button2 == Level::High) as u16) << 4 // B Button (Button 5)
-                | ((input.buttons.button3 == Level::High) as u16) << 5 // C Button (Button 6)
-                | ((input.buttons.button4 == Level::High) as u16) << 7 // D Button (Button 8)
-                | ((input.buttons.fx2 == Level::High) as u16) << 1 // FX Right (Button 2)
-                | ((input.buttons.start == Level::High) as u16) << 9 // Start (Button 10)
-                | ((input.knobs.1 == KnobTurn::Left) as u16) // Right knob left turn (Button 1)
-                | ((input.knobs.1 == KnobTurn::Right) as u16) << 2; // Right knob right turn (Button 3)
+    let mut report = GamepadInputReport::default();
 
-    let dpad = if input.buttons.fx1 == Level::High {
-        // FX Left (Dpad down) + Left knob turns
-        5 + (input.knobs.0 == KnobTurn::Left) as u8 - (input.knobs.0 == KnobTurn::Right) as u8
-    } else if input.knobs.0 == KnobTurn::Left {
-        7 // Left knob left turn (Dpad left)
-    } else if input.knobs.0 == KnobTurn::Right {
-        3 // Left knob right turn (Dpad right)
-    } else {
-        0
-    };
-
-    GamepadInputReport {
-        buttons: little_endian::U16::new(buttons),
-        dpad,
+    if input.buttons.button1 == Level::High {
+        report.button::<7>();
     }
+
+    if input.buttons.button2 == Level::High {
+        report.button::<5>();
+    }
+
+    if input.buttons.button3 == Level::High {
+        report.button::<6>();
+    }
+
+    if input.buttons.button4 == Level::High {
+        report.button::<8>();
+    }
+
+    if input.buttons.fx2 == Level::High {
+        report.button::<2>();
+    }
+
+    if input.buttons.start == Level::High {
+        report.button::<10>();
+    }
+
+    if input.knobs.1 == KnobTurn::Left {
+        report.button::<1>();
+    } else if input.knobs.1 == KnobTurn::Right {
+        report.button::<3>();
+    }
+
+    if input.buttons.fx1 == Level::High {
+        report.dpad_down();
+    }
+
+    if input.knobs.0 == KnobTurn::Left {
+        report.dpad_left();
+    } else if input.knobs.0 == KnobTurn::Right {
+        report.dpad_right();
+    }
+
+    report
 }
 
 #[inline(always)]
