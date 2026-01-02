@@ -1,0 +1,15 @@
+[package]
+name = "keycode"
+authors.workspace = true
+publish.workspace = true
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+zerocopy = { version = "0.8.31", features = ["derive"] }
+
+[build-dependencies]
+keycode-gen = { path = "../keycode-gen" }
+
+quote = "1.0"
