@@ -16,5 +16,5 @@ pub struct InputPinout<'a> {
 
 pub const KNOB_SAMPLES: usize = 32;
 
-pub type KnobFilter = filter::KnobFilter<20, 40>;
+pub type KnobFilter = filter::KnobFilter<32, 40>;
 pub type ButtonDebouncer = filter::ButtonDebouncer<5>;
