@@ -21,9 +21,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let name = format_ident!("{}", def.key);
         let keycode = u16::from_str_radix(&key[2..], 16).expect("invalid keycode");
-        let desc = def.label.map(|label| {
-            quote!(#[doc = #label])
+        let desc = def.label.and_then(|label| {
+            if label.is_empty() {
+                None
+            } else {
+                Some(quote!(#[doc = #label]))
+            }
         });
+
         Some(quote! {
             #desc
             pub const #name: Self = Self(#keycode);
