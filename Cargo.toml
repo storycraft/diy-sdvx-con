@@ -1,6 +1,8 @@
 [workspace]
 resolver = "3"
-members = ["firmware", "keycode-gen"]
+members = ["crates/*", "xtask"]
+default-members = []
+exclude = ["firmware"]
 
 [workspace.package]
 authors = ["storycraft <storycraft@pancake.sh>"]

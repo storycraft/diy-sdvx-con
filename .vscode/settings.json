@@ -1,3 +1,7 @@
 {
-    "rust-analyzer.cargo.allTargets": false
+    "rust-analyzer.cargo.allTargets": false,
+    "rust-analyzer.linkedProjects": [
+        "Cargo.toml",
+        "firmware/Cargo.toml",
+    ]
 }

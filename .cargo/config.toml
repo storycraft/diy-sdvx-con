@@ -1,8 +1,2 @@
-[target.'cfg(all(target_arch = "arm", target_os = "none"))']
-runner = "picotool load --update --verify --execute -t elf"
-
-[build]
-target = "thumbv8m.main-none-eabihf"
-
-[profile.release]
-lto = true
+[alias]
+xtask = "run -p xtask --release"
