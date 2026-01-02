@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let KeycodeIns::Def(def) = value else {
             return None;
         };
-        
+
         let name = format_ident!("{}", def.key);
         let keycode = u16::from_str_radix(&key[2..], 16).expect("invalid keycode");
         let desc = def.label.unwrap_or_default();
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let KeyRangeIns::Def { define } = value else {
             return None;
         };
-        
+
         let name = format_ident!("RANGE_{}", define);
         let KeyRange { start, end } = key;
         Some(quote! {
@@ -53,9 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let file = fs::File::create(PathBuf::from(&out_dir).join("keycode.rs"))?;
     let mut writer = BufWriter::new(file);
-    for token in tokens {
-        write!(writer, "{token} ")?;
-    }
+    write!(writer, "{}", prettyplease::unparse(&syn::parse2(tokens)?))?;
 
     Ok(())
 }

@@ -13,3 +13,5 @@ zerocopy = { version = "0.8.31", features = ["derive"] }
 keycode-gen = { path = "../keycode-gen" }
 
 quote = "1.0"
+syn = { version = "2", features = ["full"] }
+prettyplease = "0.2.37"
