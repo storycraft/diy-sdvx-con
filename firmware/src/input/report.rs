@@ -34,6 +34,7 @@ async fn task<T: AsInputReport, const N: usize>(
     mut writer: HidWriter<'static, Driver, N>,
 ) -> ! {
     writer.ready().await;
+
     loop {
         match writer.write_serialize(&rx.wait().await).await {
             Ok(()) => {}
