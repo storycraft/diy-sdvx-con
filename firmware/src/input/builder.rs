@@ -32,7 +32,7 @@ impl GamepadInputBuilder {
             // centered
             0 => 5,
             // down
-            4 | 5 | 6 => self.0.dpad,
+            4..=6 => self.0.dpad,
             // left
             7 => 6,
             // right
@@ -47,7 +47,7 @@ impl GamepadInputBuilder {
             // centered
             0 => 7,
             // left
-            6 | 7 | 8 => self.0.dpad,
+            6..=8 => self.0.dpad,
             // up
             1 => 8,
             // down
@@ -62,7 +62,7 @@ impl GamepadInputBuilder {
             // centered
             0 => 3,
             // left
-            2 | 3 | 4 => self.0.dpad,
+            2..=4 => self.0.dpad,
             // up
             1 => 2,
             // down

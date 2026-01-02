@@ -20,4 +20,3 @@ pub const MOUSE_WHEEL_SPEED: i8 = 1;
 
 pub type KnobFilter = filter::KnobFilter<32, 40>;
 pub type ButtonDebouncer = filter::ButtonDebouncer<5>;
-

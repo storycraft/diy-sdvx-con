@@ -47,7 +47,6 @@ impl InputReports {
             Keycode::RANGE_QK_BASIC_START..MOUSE_KEY_START => {
                 self.keyboard(code, pressed);
             }
-
             MOUSE_KEY_START..=MOUSE_KEY_END => self.mouse(code, pressed),
 
             GAMEPAD_KEY_START..=GAMEPAD_KEY_END => self.gamepad(code, pressed),
@@ -159,8 +158,8 @@ impl InputReports {
             Keycode(MODIFIER_START..=MODIFIER_END) => {
                 keyboard.modifier((code.0 - MODIFIER_START) as u8);
             }
-    
-            _ => {},
+
+            _ => {}
         }
     }
 }
