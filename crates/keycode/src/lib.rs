@@ -6,4 +6,10 @@ use zerocopy::{FromBytes, Immutable, IntoBytes};
 #[repr(transparent)]
 pub struct Keycode(pub u16);
 
+impl From<u16> for Keycode {
+    fn from(value: u16) -> Self {
+        Self(value)
+    }
+}
+
 include!(concat!(env!("OUT_DIR"), "/impl_keycode.rs"));
