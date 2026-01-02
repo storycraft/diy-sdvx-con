@@ -6,12 +6,11 @@ mod keymap;
 
 use embassy_executor::SpawnToken;
 use embassy_usb::class::hid::{HidReaderWriter, State};
-use num_traits::FromPrimitive;
+use keycode::Keycode;
 use static_cell::StaticCell;
 use zerocopy::{FromBytes, IntoBytes, big_endian};
 
 use crate::{
-    keycode::Keycode,
     usb::{self, Driver, hid::QmkRawHidReport},
     userdata::{self, keymap::Keymap},
     via::{
@@ -120,12 +119,12 @@ impl<'a> ViaCmd<'a> {
                     get_keymap_keycode(&userdata.keymap, cmd.row, cmd.col)
                 })
                 .unwrap_or_default();
-                cmd.key = big_endian::U16::new(key as u16);
+                cmd.key = big_endian::U16::new(key.0);
             }
 
             ViaCmdId::DYNAMIC_KEYMAP_SET_KEYCODE => {
                 let cmd = DynamicKeymapKeycode::mut_from_prefix(self.data).unwrap().0;
-                let key = Keycode::from_u16(cmd.key.get()).unwrap_or_default();
+                let key = Keycode::from(cmd.key.get());
 
                 userdata::update(|userdata| {
                     set_keymap_keycode(&mut userdata.keymap, cmd.row, cmd.col, key);
@@ -135,7 +134,7 @@ impl<'a> ViaCmd<'a> {
                     "Keycode at row: {} col: {} updated to key: {:#06X}",
                     cmd.row,
                     cmd.col,
-                    key as u16
+                    key.0
                 );
             }
 
@@ -217,18 +216,17 @@ impl<'a> ViaCmd<'a> {
             ViaCmdId::DYNAMIC_KEYMAP_GET_ENCODER => {
                 let cmd = DynamicKeymapEncoder::mut_from_prefix(self.data).unwrap().0;
 
-                let key = get_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0)
-                    .unwrap_or_default() as u16;
-                cmd.key = big_endian::U16::new(key);
+                let key =
+                    get_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0).unwrap_or_default();
+                cmd.key = big_endian::U16::new(key.0);
             }
 
             ViaCmdId::DYNAMIC_KEYMAP_SET_ENCODER => {
                 let cmd = DynamicKeymapEncoder::mut_from_prefix(self.data).unwrap().0;
 
-                if let Some(key) = Keycode::from_u16(cmd.key.get()) {
-                    set_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0, key);
-                    userdata::save();
-                }
+                let key = Keycode::from(cmd.key.get());
+                set_encoder_keycode(cmd.encoder_id, cmd.clockwise != 0, key);
+                userdata::save();
             }
 
             _ => {

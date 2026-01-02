@@ -2,7 +2,7 @@
 #![no_main]
 
 mod input;
-pub mod keycode;
+mod keycodes;
 mod led;
 mod logger;
 mod usb;

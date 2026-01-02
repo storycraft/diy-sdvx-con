@@ -1,6 +1,7 @@
+use keycode::Keycode;
 use zerocopy::{Immutable, IntoBytes, TryFromBytes};
 
-use crate::keycode::Keycode;
+use crate::keycodes;
 
 #[derive(Clone, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
 #[repr(C)]
@@ -26,17 +27,17 @@ pub struct Keymap {
 
 impl Keymap {
     pub const DEFAULT: Self = Self {
-        left_knob_left: Keycode::DPAD_LEFT,
-        left_knob_right: Keycode::DPAD_RIGHT,
-        start: Keycode::JOY_BTN10,
-        right_knob_left: Keycode::JOY_BTN1,
-        right_knob_right: Keycode::JOY_BTN3,
-        button1: Keycode::JOY_BTN7,
-        button2: Keycode::JOY_BTN5,
-        button3: Keycode::JOY_BTN6,
-        button4: Keycode::JOY_BTN8,
-        fx1: Keycode::DPAD_DOWN,
-        fx2: Keycode::JOY_BTN2,
+        left_knob_left: keycodes::DPAD_LEFT,
+        left_knob_right: keycodes::DPAD_RIGHT,
+        start: keycodes::JOY_BTN10,
+        right_knob_left: keycodes::JOY_BTN1,
+        right_knob_right: keycodes::JOY_BTN3,
+        button1: keycodes::JOY_BTN7,
+        button2: keycodes::JOY_BTN5,
+        button3: keycodes::JOY_BTN6,
+        button4: keycodes::JOY_BTN8,
+        fx1: keycodes::DPAD_DOWN,
+        fx2: keycodes::JOY_BTN2,
         _unused: 0,
     };
 }

@@ -1,4 +1,6 @@
-use crate::{keycode::Keycode, userdata};
+use keycode::Keycode;
+
+use crate::userdata;
 
 pub fn get_encoder_keycode(id: u8, clockwise: bool) -> Option<Keycode> {
     userdata::get(|data| match (id, clockwise) {
