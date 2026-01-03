@@ -48,20 +48,19 @@ impl<'a> KnobInputReader<'a> {
             .await
             .unwrap();
 
-        let mut knob_left = 0_u32;
-        let mut knob_right = 0_u32;
-        for slice in self.knob_buf.windows(6).step_by(2) {
-            let [left1, right1, left2, right2, left3, right3] = *slice else {
+        let mut knob_left = 4096_u16;
+        let mut knob_right = 4096_u16;
+        let (chunks, []) = self.knob_buf.as_chunks::<2>() else {
+            unreachable!();
+        };
+        for slice in chunks.windows(3) {
+            let [[left1, right1], [left2, right2], [left3, right3]] = *slice else {
                 unreachable!()
             };
 
-            knob_left += median(left1, left2, left3) as u32;
-            knob_right += median(right1, right2, right3) as u32;
+            knob_left = knob_left.min(median(left1, left2, left3));
+            knob_right = knob_right.min(median(right1, right2, right3));
         }
-
-        // Average median knob value
-        knob_left /= const { KNOB_SAMPLES as u32 - 2 };
-        knob_right /= const { KNOB_SAMPLES as u32 - 2 };
 
         (
             KnobTurn::from(self.left_filter.filter(knob_left as _, elapsed_ms)),
