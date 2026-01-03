@@ -47,6 +47,24 @@ pub struct ButtonInputRead {
     pub start: Level,
 }
 
+impl ButtonInputRead {
+    pub const DEFAULT: Self = Self {
+        button1: Level::Low,
+        button2: Level::Low,
+        button3: Level::Low,
+        button4: Level::Low,
+        fx1: Level::Low,
+        fx2: Level::Low,
+        start: Level::Low,
+    };
+}
+
+impl Default for ButtonInputRead {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
 pub struct Buttons<'a> {
     pub button1: Button<'a>,
     pub button2: Button<'a>,

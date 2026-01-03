@@ -1,21 +1,25 @@
+pub mod config;
+pub mod hid;
+
 use embassy_executor::Spawner;
 use embassy_rp::{peripherals::USB, usb::Driver as UsbDriver};
 use static_cell::StaticCell;
 
 use crate::{
-    input::{InputConfig, input_task},
+    input::{
+        input_task,
+        reader::{button::ButtonInputReader, knob::KnobInputReader},
+    },
     logger::logger_task,
     via::via_task,
 };
-
-pub mod config;
-pub mod hid;
 
 pub type Driver = UsbDriver<'static, USB>;
 
 pub fn init_usb(
     spawner: Spawner,
-    input_config: InputConfig,
+    button_reader: ButtonInputReader<'static>,
+    knob_reader: KnobInputReader<'static>,
     driver: Driver,
 ) -> impl Future + 'static {
     // Allocates descriptor and control buffer
@@ -35,7 +39,12 @@ pub fn init_usb(
     );
 
     // Setup HID input task
-    spawner.must_spawn(input_task(spawner, input_config, &mut builder));
+    spawner.must_spawn(input_task(
+        spawner,
+        button_reader,
+        knob_reader,
+        &mut builder,
+    ));
 
     // Setup via task
     spawner.must_spawn(via_task(&mut builder));

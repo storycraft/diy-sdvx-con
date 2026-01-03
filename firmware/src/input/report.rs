@@ -1,13 +1,14 @@
 use crate::usb::{self, Driver, hid::GamepadInputReport};
 use embassy_executor::SpawnToken;
-use embassy_sync::{blocking_mutex::raw::CriticalSectionRawMutex, signal::Signal};
+use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use embassy_usb::class::hid::{self, HidWriter};
 use static_cell::StaticCell;
 use usbd_hid::descriptor::{AsInputReport, KeyboardReport, MediaKeyboardReport, MouseReport};
 
 macro_rules! define_hid_task {
     ($signal:ident, $name:ident : $ty:ty, $config:expr) => {
-        pub static $signal: Signal<CriticalSectionRawMutex, $ty> = Signal::new();
+        // Only used within input tasks.
+        pub static $signal: Signal<ThreadModeRawMutex, $ty> = Signal::new();
 
         pub fn $name(
             builder: &mut embassy_usb::Builder<'static, Driver>,
@@ -30,7 +31,7 @@ macro_rules! define_hid_task {
 
 #[inline]
 async fn task<T: AsInputReport, const N: usize>(
-    rx: &Signal<CriticalSectionRawMutex, T>,
+    rx: &Signal<ThreadModeRawMutex, T>,
     mut writer: HidWriter<'static, Driver, N>,
 ) -> ! {
     writer.ready().await;

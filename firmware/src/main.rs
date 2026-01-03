@@ -10,7 +10,10 @@ mod userdata;
 mod via;
 
 use crate::{
-    input::{InputConfig, config::InputPinout},
+    input::{
+        config::InputPinout,
+        reader::{button::ButtonInputReader, knob::KnobInputReader},
+    },
     led::{LedConfig, LedPinout, led_task},
     usb::init_usb,
     userdata::init_userdata,
@@ -65,29 +68,29 @@ async fn main(spawner: Spawner) {
     // Controller initialization phase
     defmt::info!("Initializing Controller...");
 
+    defmt::info!("Initializing input...");
+    let (buttons, knobs) = InputPinout {
+        button1: p.PIN_0,
+        button2: p.PIN_1,
+        button3: p.PIN_2,
+        button4: p.PIN_3,
+
+        fx1: p.PIN_4,
+        fx2: p.PIN_5,
+
+        start: p.PIN_6,
+
+        left_knob: p.PIN_26,
+        right_knob: p.PIN_27,
+    }
+    .inputs();
+
+    let button_reader = ButtonInputReader::new(buttons);
+    let knob_reader = KnobInputReader::new(knobs, adc, p.DMA_CH0);
+    defmt::info!("Input initialized.");
+
     defmt::info!("Initializing USB...");
-    let usb_task = init_usb(
-        spawner,
-        InputConfig {
-            adc,
-            dma: p.DMA_CH0,
-            pins: InputPinout {
-                button1: p.PIN_0,
-                button2: p.PIN_1,
-                button3: p.PIN_2,
-                button4: p.PIN_3,
-
-                fx1: p.PIN_4,
-                fx2: p.PIN_5,
-
-                start: p.PIN_6,
-
-                left_knob: p.PIN_26,
-                right_knob: p.PIN_27,
-            },
-        },
-        driver,
-    );
+    let usb_task = init_usb(spawner, button_reader, knob_reader, driver);
     defmt::info!("USB Initialized.");
 
     defmt::info!("Initializing Core 1...");
