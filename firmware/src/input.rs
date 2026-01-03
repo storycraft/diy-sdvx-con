@@ -107,11 +107,18 @@ async fn input_updater(
             report_inputs(keymap, read);
         });
 
-        let elapsed_ms = ticker.next_elapsed_ms();
-        CURRENT_INPUT.borrow().set(InputRead {
-            knobs: knob_reader.read(elapsed_ms).await,
-            buttons: button_reader.read(elapsed_ms),
-        });
+        loop {
+            let elapsed_ms = ticker.next_elapsed_ms();
+            let next = InputRead {
+                knobs: knob_reader.read(elapsed_ms).await,
+                buttons: button_reader.read(elapsed_ms),
+            };
+
+            if next != read || next != InputRead::DEFAULT {
+                CURRENT_INPUT.borrow().set(next);
+                break;
+            }
+        }
     }
 }
 
