@@ -1,4 +1,3 @@
-use embassy_rp::gpio::Level;
 use embassy_time::Instant;
 
 use crate::{input::CURRENT_INPUT, via::ViaCmd};
@@ -36,13 +35,12 @@ impl ViaCmd<'_> {
 
                 let read = CURRENT_INPUT.borrow().get();
                 let matrix = [
-                    ((read.buttons.start == Level::High) as u8) << 1,
-                    ((read.buttons.button1 == Level::High) as u8)
-                        | ((read.buttons.button2 == Level::High) as u8) << 1
-                        | ((read.buttons.button3 == Level::High) as u8) << 2
-                        | ((read.buttons.button4 == Level::High) as u8) << 3,
-                    ((read.buttons.fx1 == Level::High) as u8)
-                        | ((read.buttons.fx2 == Level::High) as u8) << 1,
+                    (read.buttons.start as u8) << 1,
+                    (read.buttons.button1 as u8)
+                        | (read.buttons.button2 as u8) << 1
+                        | (read.buttons.button3 as u8) << 2
+                        | (read.buttons.button4 as u8) << 3,
+                    (read.buttons.fx1 as u8) | (read.buttons.fx2 as u8) << 1,
                 ];
 
                 if let Some(matrix_slice) = matrix.get((offset as usize)..) {
