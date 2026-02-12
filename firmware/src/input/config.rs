@@ -53,5 +53,5 @@ pub const KNOB_SAMPLES: usize = 32;
 pub const MOUSE_CURSOR_SPEED: i8 = 3;
 pub const MOUSE_WHEEL_SPEED: i8 = 1;
 
-pub type KnobFilter = filter::KnobFilter<32, 40>;
+pub type KnobFilter = filter::KnobFilter<32, 10>;
 pub type ButtonDebouncer = filter::ButtonDebouncer<5>;
