@@ -1,7 +1,7 @@
 use usbd_hid::descriptor::{KeyboardReport, MouseReport, SerializedDescriptor};
 
 use crate::usb::{
-    eac::EacInputReport,
+    eac,
     hid::{GamepadInputReport, QmkRawHidReport},
 };
 
@@ -22,11 +22,10 @@ const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb:
 
 pub fn eac<'a>() -> embassy_usb::class::hid::Config<'a> {
     embassy_usb::class::hid::Config {
-        report_descriptor: EacInputReport::desc(),
-        // TODO
+        report_descriptor: eac::EAC_HID_DESC,
         request_handler: None,
         poll_ms: 1,
-        max_packet_size: const { size_of::<EacInputReport>() as u16 },
+        max_packet_size: 4,
     }
 }
 
