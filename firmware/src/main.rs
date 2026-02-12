@@ -12,7 +12,10 @@ mod via;
 use crate::{
     input::{
         config::InputPinout,
-        reader::{button::ButtonInputReader, knob::KnobInputReader},
+        reader::{
+            button::{self, ButtonInputReader},
+            knob::KnobInputReader,
+        },
     },
     led::{LedConfig, LedPinout, led_task},
     usb::init_usb,
@@ -85,6 +88,8 @@ async fn main(spawner: Spawner) {
     }
     .inputs();
 
+    read_mode_hotkey(&buttons);
+
     let button_reader = ButtonInputReader::new(buttons);
     let knob_reader = KnobInputReader::new(knobs, adc, p.DMA_CH0);
     defmt::info!("Input initialized.");
@@ -113,6 +118,33 @@ async fn main(spawner: Spawner) {
 
     defmt::info!("Controller started.");
     usb_task.await;
+}
+
+fn read_mode_hotkey(button: &button::Buttons) {
+    if !button.start.input.is_high() {
+        return;
+    }
+    let prev_eac_mode = userdata::get(|data| data.eac_mode);
+
+    // Start + Button 1: Enable EAC mode
+    if button.button1.input.is_high() && !prev_eac_mode {
+        userdata::update(|data| {
+            data.eac_mode = true;
+        });
+        userdata::save();
+
+        defmt::info!("EAC mode enabled via hotkey.");
+    
+    // Start + Button 2: Enable HID mode
+    } else if button.button2.input.is_high() && prev_eac_mode {
+        userdata::update(|data| {
+            data.eac_mode = false;
+        });
+        userdata::save();
+
+        defmt::info!("HID mode enabled via hotkey.");
+        return;
+    }
 }
 
 fn start_core1(core1: Peri<'static, CORE1>, f: impl FnOnce(Spawner) + 'static + Send) {

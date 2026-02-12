@@ -78,7 +78,7 @@ pub struct Buttons<'a> {
 }
 
 pub struct Button<'a> {
-    input: Input<'a>,
+    pub input: Input<'a>,
     debouncer: ButtonDebouncer,
 }
 
