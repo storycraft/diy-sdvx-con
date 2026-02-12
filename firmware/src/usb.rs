@@ -1,6 +1,6 @@
 pub mod config;
-pub mod hid;
 pub mod eac;
+pub mod hid;
 
 use embassy_executor::Spawner;
 use embassy_rp::{peripherals::USB, usb::Driver as UsbDriver};
