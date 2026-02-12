@@ -1,4 +1,4 @@
-use crate::usb::{self, Driver, hid::GamepadInputReport};
+use crate::usb::{self, Driver, eac::EacInputReport, hid::GamepadInputReport};
 use embassy_executor::SpawnToken;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use embassy_usb::class::hid::{self, HidWriter};
@@ -43,6 +43,8 @@ async fn task<T: AsInputReport, const N: usize>(
         };
     }
 }
+
+define_hid_task!(EAC, eac_report_task: EacInputReport, usb::config::eac());
 
 define_hid_task!(GAMEPAD, gamepad_report_task: GamepadInputReport, usb::config::gamepad());
 define_hid_task!(KEYBOARD, keyboard_report_task: KeyboardReport, usb::config::keyboard());

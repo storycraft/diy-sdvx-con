@@ -1,13 +1,15 @@
 use usbd_hid::descriptor::{KeyboardReport, MouseReport, SerializedDescriptor};
 
-use crate::usb::hid::{GamepadInputReport, QmkRawHidReport};
+use crate::usb::{
+    eac::EacInputReport,
+    hid::{GamepadInputReport, QmkRawHidReport},
+};
 
-pub const DEVICE: embassy_usb::Config = device_config();
+pub const DEVICE: embassy_usb::Config = device_config(embassy_usb::Config::new(0x3d5a, 0xcafe));
+pub const EAC_DEVICE: embassy_usb::Config = device_config(embassy_usb::Config::new(0x1ccf, 0x101c));
 
 /// USB device configuration
-const fn device_config() -> embassy_usb::Config<'static> {
-    let mut config = embassy_usb::Config::new(0x3d5a, 0xcafe);
-
+const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb::Config<'static> {
     config.manufacturer = Some("SDVX-Con");
     config.product = Some("SDVX Controller");
 
@@ -16,6 +18,16 @@ const fn device_config() -> embassy_usb::Config<'static> {
     config.max_packet_size_0 = 64;
 
     config
+}
+
+pub fn eac<'a>() -> embassy_usb::class::hid::Config<'a> {
+    embassy_usb::class::hid::Config {
+        report_descriptor: EacInputReport::desc(),
+        // TODO
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: const { size_of::<EacInputReport>() as u16 },
+    }
 }
 
 pub fn gamepad<'a>() -> embassy_usb::class::hid::Config<'a> {

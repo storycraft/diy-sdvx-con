@@ -20,7 +20,7 @@ use crate::{
         ticker::ElapsedTimer,
     },
     led::{self, LedState},
-    usb::Driver,
+    usb::{Driver, eac::EacInputReport},
     userdata::{self, keymap::Keymap},
 };
 
@@ -30,10 +30,6 @@ pub enum KnobTurn {
     None,
     Left,
     Right,
-}
-
-impl KnobTurn {
-    pub const DEFAULT: Self = Self::None;
 }
 
 impl From<i16> for KnobTurn {
@@ -46,7 +42,25 @@ impl From<i16> for KnobTurn {
     }
 }
 
-pub fn input_task(
+pub fn eac_input_task(
+    spawner: Spawner,
+    button_reader: ButtonInputReader<'static>,
+    knob_reader: KnobInputReader<'static>,
+    builder: &mut embassy_usb::Builder<'static, Driver>,
+) -> SpawnToken<impl Sized + use<>> {
+    #[embassy_executor::task]
+    async fn inner(
+        button_reader: ButtonInputReader<'static>,
+        knob_reader: KnobInputReader<'static>,
+    ) {
+        input_read_loop(button_reader, knob_reader, report_eac_inputs).await;
+    }
+
+    spawner.must_spawn(report::eac_report_task(builder));
+    inner(button_reader, knob_reader)
+}
+
+pub fn hid_input_task(
     spawner: Spawner,
     button_reader: ButtonInputReader<'static>,
     knob_reader: KnobInputReader<'static>,
@@ -62,27 +76,38 @@ pub fn input_task(
             userdata::get(|userdata| userdata.keymap.clone()),
         );
 
-        join(
-            input_updater(button_reader, knob_reader, &keymap),
-            keymap_updater(&keymap),
-        )
-        .await;
+        let hid_input_updater = input_read_loop(button_reader, knob_reader, |read| {
+            keymap.lock(|keymap| {
+                report_hid_inputs(keymap, read);
+
+                led::update(LedState {
+                    button_1: read.buttons.button1,
+                    button_2: read.buttons.button2,
+                    button_3: read.buttons.button3,
+                    button_4: read.buttons.button4,
+                    fx_1: read.buttons.fx1,
+                    fx_2: read.buttons.fx2,
+                    start: read.buttons.start,
+                });
+            });
+        });
+
+        join(hid_input_updater, keymap_updater(&keymap)).await;
     }
 
     spawner.must_spawn(report::gamepad_report_task(builder));
     spawner.must_spawn(report::keyboard_report_task(builder));
     spawner.must_spawn(report::mouse_report_task(builder));
-
     inner(button_reader, knob_reader)
 }
 
 pub static CURRENT_INPUT: ThreadModeMutex<Cell<InputRead>> =
     ThreadModeMutex::new(Cell::new(InputRead::DEFAULT));
 
-async fn input_updater(
+async fn input_read_loop(
     mut button_reader: ButtonInputReader<'static>,
     mut knob_reader: KnobInputReader<'static>,
-    keymap: &NoopMutex<Keymap>,
+    mut f: impl FnMut(InputRead),
 ) {
     CURRENT_INPUT.borrow().set(InputRead {
         knobs: knob_reader.read(0).await,
@@ -92,19 +117,7 @@ async fn input_updater(
     let mut ticker = ElapsedTimer::new(Instant::now());
     loop {
         let read = CURRENT_INPUT.borrow().get();
-        led::update(LedState {
-            button_1: read.buttons.button1,
-            button_2: read.buttons.button2,
-            button_3: read.buttons.button3,
-            button_4: read.buttons.button4,
-            fx_1: read.buttons.fx1,
-            fx_2: read.buttons.fx2,
-            start: read.buttons.start,
-        });
-
-        keymap.lock(|keymap| {
-            report_inputs(keymap, read);
-        });
+        f(read);
 
         loop {
             let elapsed_ms = ticker.next_elapsed_ms();
@@ -135,7 +148,14 @@ async fn keymap_updater(keymap: &NoopMutex<Keymap>) {
     }
 }
 
-fn report_inputs(keymap: &Keymap, input: InputRead) {
+fn report_eac_inputs(input: InputRead) {
+    report::EAC.signal(EacInputReport {
+        buttons: todo!(),
+        axis: todo!(),
+    });
+}
+
+fn report_hid_inputs(keymap: &Keymap, input: InputRead) {
     let mut reports = InputReports::default();
 
     reports.key(keymap.button1, input.buttons.button1 == Level::High);
@@ -146,11 +166,13 @@ fn report_inputs(keymap: &Keymap, input: InputRead) {
     reports.key(keymap.fx2, input.buttons.fx2 == Level::High);
     reports.key(keymap.start, input.buttons.start == Level::High);
 
-    reports.key(keymap.left_knob_left, input.knobs.0 == KnobTurn::Left);
-    reports.key(keymap.left_knob_right, input.knobs.0 == KnobTurn::Right);
+    let left_knob = KnobTurn::from(input.knobs.0);
+    reports.key(keymap.left_knob_left, left_knob == KnobTurn::Left);
+    reports.key(keymap.left_knob_right, left_knob == KnobTurn::Right);
 
-    reports.key(keymap.right_knob_left, input.knobs.1 == KnobTurn::Left);
-    reports.key(keymap.right_knob_right, input.knobs.1 == KnobTurn::Right);
+    let right_knob = KnobTurn::from(input.knobs.1);
+    reports.key(keymap.right_knob_left, right_knob == KnobTurn::Left);
+    reports.key(keymap.right_knob_right, right_knob == KnobTurn::Right);
 
     reports.send();
 }

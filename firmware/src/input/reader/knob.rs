@@ -4,10 +4,7 @@ use embassy_rp::{
     peripherals::DMA_CH0,
 };
 
-use crate::input::{
-    KnobTurn,
-    config::{KNOB_SAMPLES, KnobFilter},
-};
+use crate::input::config::{KNOB_SAMPLES, KnobFilter};
 
 pub struct KnobInputReader<'a> {
     /// ADC for knob analog conversion
@@ -41,7 +38,7 @@ impl<'a> KnobInputReader<'a> {
         }
     }
 
-    pub async fn read(&mut self, elapsed_ms: u16) -> (KnobTurn, KnobTurn) {
+    pub async fn read(&mut self, elapsed_ms: u16) -> (i16, i16) {
         // Perform adc multi read
         self.adc
             .read_many_multichannel(&mut self.knobs, &mut self.knob_buf, 96, self.dma.reborrow())
@@ -63,8 +60,8 @@ impl<'a> KnobInputReader<'a> {
         }
 
         (
-            KnobTurn::from(self.left_filter.filter(knob_left as _, elapsed_ms)),
-            KnobTurn::from(self.right_filter.filter(knob_right as _, elapsed_ms)),
+            self.left_filter.filter(knob_left as _, elapsed_ms),
+            self.right_filter.filter(knob_right as _, elapsed_ms),
         )
     }
 }
