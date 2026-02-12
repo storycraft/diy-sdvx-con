@@ -1,5 +1,4 @@
 use keycode::Keycode;
-use usbd_hid::descriptor::MediaKeyboardReport;
 
 use crate::{
     input::{
@@ -13,7 +12,6 @@ use crate::{
 pub struct InputReports {
     gamepad: Option<GamepadInputBuilder>,
     keyboard: Option<KeyboardInputBuilder>,
-    media: Option<MediaKeyboardReport>,
     mouse: Option<MouseInputBuilder>,
 }
 
@@ -29,10 +27,6 @@ impl InputReports {
 
         if let Some(mouse) = self.mouse {
             report::MOUSE.signal(mouse.build());
-        }
-
-        if let Some(media) = self.media {
-            report::MEDIA.signal(media);
         }
     }
 

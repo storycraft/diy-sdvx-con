@@ -3,7 +3,7 @@ use embassy_executor::SpawnToken;
 use embassy_sync::{blocking_mutex::raw::ThreadModeRawMutex, signal::Signal};
 use embassy_usb::class::hid::{self, HidWriter};
 use static_cell::StaticCell;
-use usbd_hid::descriptor::{AsInputReport, KeyboardReport, MediaKeyboardReport, MouseReport};
+use usbd_hid::descriptor::{AsInputReport, KeyboardReport, MouseReport};
 
 macro_rules! define_hid_task {
     ($signal:ident, $name:ident : $ty:ty, $config:expr) => {
@@ -46,5 +46,4 @@ async fn task<T: AsInputReport, const N: usize>(
 
 define_hid_task!(GAMEPAD, gamepad_report_task: GamepadInputReport, usb::config::gamepad());
 define_hid_task!(KEYBOARD, keyboard_report_task: KeyboardReport, usb::config::keyboard());
-define_hid_task!(MEDIA, media_report_task: MediaKeyboardReport, usb::config::media_control());
 define_hid_task!(MOUSE, mouse_report_task: MouseReport, usb::config::mouse());

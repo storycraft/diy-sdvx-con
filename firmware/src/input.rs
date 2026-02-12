@@ -71,7 +71,6 @@ pub fn input_task(
 
     spawner.must_spawn(report::gamepad_report_task(builder));
     spawner.must_spawn(report::keyboard_report_task(builder));
-    spawner.must_spawn(report::media_report_task(builder));
     spawner.must_spawn(report::mouse_report_task(builder));
 
     inner(button_reader, knob_reader)
