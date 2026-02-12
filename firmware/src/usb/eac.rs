@@ -142,7 +142,7 @@ pub const EAC_HID_DESC: &[u8] = &[
 #[derive(Default, PartialEq, Eq)]
 pub struct EacInputReport {
     /// Button states from button 1 to button 9
-    pub buttons: u16,
+    pub buttons: [u8; 2],
     /// Analog axis
     pub axis: [u8; 2],
 }
