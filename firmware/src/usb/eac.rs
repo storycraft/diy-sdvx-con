@@ -120,6 +120,40 @@ pub const EAC_HID_DESC: &[u8] = &[
     0x75, 0x01, //          Report Size (1)
     0x95, 0x01, //          Report Count (1)
     0x91, 0x03, //          Output (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    // RGB LED
+    // Red
+    0x05, 0x0a, //          Usage Page (Vendor Defined 0x0A)
+    0x09, 0x07, //          Usage (0x07)
+    0xa1, 0x02, //          Collection (Logical)
+    0x05, 0x08, //              Usage Page (LEDs)
+    0x09, 0x4b, //              Usage (Generic Indicator 1)
+    0x79, 0x0b, //              String Index (11)
+    0x75, 0x08, //              Report Size (8)
+    0x95, 0x01, //              Report Count (1)
+    0x91, 0x02, //              Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xc0, //                End Collection
+    // Blue
+    0x05, 0x0a, //          Usage Page (Vendor Defined 0x0A)
+    0x09, 0x07, //          Usage (0x07)
+    0xa1, 0x02, //          Collection (Logical)
+    0x05, 0x08, //              Usage Page (LEDs)
+    0x09, 0x4b, //              Usage (Generic Indicator 1)
+    0x79, 0x0c, //              String Index (12)
+    0x75, 0x08, //              Report Size (8)
+    0x95, 0x01, //              Report Count (1)
+    0x91, 0x02, //              Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xc0, //                End Collection
+    // Green
+    0x05, 0x0a, //          Usage Page (Vendor Defined 0x0A)
+    0x09, 0x07, //          Usage (0x07)
+    0xa1, 0x02, //          Collection (Logical)
+    0x05, 0x08, //              Usage Page (LEDs)
+    0x09, 0x4b, //              Usage (Generic Indicator 1)
+    0x79, 0x0d, //              String Index (13)
+    0x75, 0x08, //              Report Size (8)
+    0x95, 0x01, //              Report Count (1)
+    0x91, 0x02, //              Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+    0xc0, //                End Collection
 
     // LED mode switch request
     0x85, 0x07, //          Report ID (7)
@@ -166,6 +200,7 @@ impl AsInputReport for EacInputReport {}
 #[derive(Default, PartialEq, Eq, FromBytes)]
 pub struct EacOutputLedReport {
     pub led: u8,
+    pub backlight: [u8; 3],
 }
 
 /// EAC LED mode control output report
