@@ -160,7 +160,7 @@ fn report_eac_inputs(input: InputRead) {
                 | ((input.buttons.start as u8) << 6),
             0,
         ],
-        axis: [(input.knobs.0 >> 4) as u8, (input.knobs.1 >> 4) as u8],
+        axis: [(input.knobs.0 >> 4) as i8, (input.knobs.1 >> 4) as i8],
     });
 }
 
