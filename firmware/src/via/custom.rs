@@ -62,7 +62,7 @@ impl ViaCmd<'_> {
                 });
                 userdata::save();
 
-                rom_data::reboot(0, 0, 0, 0);
+                rom_data::reboot(0, 1, 0, 0);
             }
 
             _ => {
