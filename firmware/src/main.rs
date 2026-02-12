@@ -134,7 +134,7 @@ fn read_mode_hotkey(button: &button::Buttons) {
         userdata::save();
 
         defmt::info!("EAC mode enabled via hotkey.");
-    
+
     // Start + Button 2: Enable HID mode
     } else if button.button2.input.is_high() && prev_eac_mode {
         userdata::update(|data| {
@@ -143,7 +143,6 @@ fn read_mode_hotkey(button: &button::Buttons) {
         userdata::save();
 
         defmt::info!("HID mode enabled via hotkey.");
-        return;
     }
 }
 
