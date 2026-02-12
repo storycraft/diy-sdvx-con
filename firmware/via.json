@@ -24,6 +24,18 @@
                 0,
                 2
               ]
+            },
+            {
+              "label": "Switch to EAC Mode",
+              "type": "button",
+              "options": [
+                1
+              ],
+              "content": [
+                "id_eac_toggle",
+                0,
+                3
+              ]
             }
           ]
         }
