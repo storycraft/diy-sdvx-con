@@ -24,7 +24,7 @@ use crate::userdata::{io::UserdataIo, keymap::Keymap};
 pub enum Signature {
     /// Current signature.
     /// Change on every [`UserData`] changes.
-    Current = 0x26d67ba1,
+    Current = 0xcaf2deac,
 }
 
 #[derive(Clone, PartialEq, Eq, TryFromBytes, IntoBytes, Immutable)]
@@ -32,12 +32,16 @@ pub enum Signature {
 pub struct Userdata {
     pub signature: Signature,
     pub keymap: Keymap,
+    pub eac_mode: bool,
+    pub _reserved: [u8; 3],
 }
 
 impl Userdata {
     pub const DEFAULT: Self = Self {
         signature: Signature::Current,
         keymap: Keymap::DEFAULT,
+        eac_mode: false,
+        _reserved: [0; 3],
     };
 }
 

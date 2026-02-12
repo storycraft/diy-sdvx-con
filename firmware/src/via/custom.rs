@@ -9,6 +9,8 @@ struct ValueId;
 impl ValueId {
     /// Reboot to BOOTSEL
     pub const REBOOT_BOOTSEL: u8 = 0x02;
+    /// SDVX EAC Mode
+    pub const EAC_MODE: u8 = 0x03;
 }
 
 impl ViaCmd<'_> {
@@ -24,7 +26,7 @@ impl ViaCmd<'_> {
 
         let value_id = self.data[1];
         match value_id {
-            ValueId::REBOOT_BOOTSEL => {
+            ValueId::REBOOT_BOOTSEL | ValueId::EAC_MODE => {
                 // Fixed value
                 self.data[2] = 1;
             }
@@ -51,6 +53,16 @@ impl ViaCmd<'_> {
                 defmt::info!("BOOTSEL Reboot requested.");
                 // Reboot to BOOTSEL
                 rom_data::reset_to_usb_boot(0, 0);
+            }
+
+            ValueId::EAC_MODE => {
+                defmt::info!("EAC Mode enabled.");
+                userdata::update(|data| {
+                    data.eac_mode = true;
+                });
+                userdata::save();
+
+                rom_data::reboot(0, 0, 0, 0);
             }
 
             _ => {
