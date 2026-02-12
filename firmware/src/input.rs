@@ -150,17 +150,16 @@ async fn keymap_updater(keymap: &NoopMutex<Keymap>) {
 
 fn report_eac_inputs(input: InputRead) {
     report::EAC.signal(EacInputReport {
-        buttons: [
-            input.buttons.button1 as u8
-                | ((input.buttons.button2 as u8) << 1)
-                | ((input.buttons.button3 as u8) << 2)
-                | ((input.buttons.button4 as u8) << 3)
-                | ((input.buttons.fx1 as u8) << 4)
-                | ((input.buttons.fx2 as u8) << 5)
-                | ((input.buttons.start as u8) << 6),
-            0,
-        ],
-        axis: [(input.knobs.0 >> 4) as i8, (input.knobs.1 >> 4) as i8],
+        report_id: 4,
+        buttons: input.buttons.button1 as u16
+            | ((input.buttons.button2 as u16) << 1)
+            | ((input.buttons.button3 as u16) << 2)
+            | ((input.buttons.button4 as u16) << 3)
+            | ((input.buttons.fx1 as u16) << 4)
+            | ((input.buttons.fx2 as u16) << 5)
+            | ((input.buttons.start as u16) << 6),
+        x: (input.knobs.0 >> 4) as i8,
+        y: (input.knobs.1 >> 4) as i8,
     });
 }
 

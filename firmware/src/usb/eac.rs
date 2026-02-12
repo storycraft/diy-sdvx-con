@@ -16,7 +16,7 @@ pub const EAC_HID_DESC: &[u8] = &[
     0x15, 0x00, //          Logical Minimum (0)
     0x25, 0x01, //          Logical Maximum (1)
     0x75, 0x01, //          Report Size (1)
-    0x95, 0x10, //          Report Count (9)
+    0x95, 0x09, //          Report Count (9)
     0x81, 0x02, //          Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
     // 7 bits padding
     0x75, 0x07, //          Report Size (7)
@@ -175,10 +175,14 @@ pub const EAC_HID_DESC: &[u8] = &[
 /// HID Input report for EAC mode
 #[derive(Default, PartialEq, Eq)]
 pub struct EacInputReport {
+    /// Report ID (4)
+    pub report_id: u8,
     /// Button states from button 1 to button 9
-    pub buttons: [u8; 2],
-    /// Analog axis
-    pub axis: [i8; 2],
+    pub buttons: u16,
+    /// Analog x
+    pub x: i8,
+    /// Analog y
+    pub y: i8,
 }
 
 impl Serialize for EacInputReport {
@@ -186,10 +190,11 @@ impl Serialize for EacInputReport {
     where
         S: Serializer,
     {
-        let mut s = serializer.serialize_tuple(3)?;
-        s.serialize_element(&4_u8)?; // Report ID
+        let mut s = serializer.serialize_tuple(4)?;
+        s.serialize_element(&self.report_id)?;
         s.serialize_element(&self.buttons)?;
-        s.serialize_element(&self.axis)?;
+        s.serialize_element(&self.x)?;
+        s.serialize_element(&self.y)?;
         s.end()
     }
 }
@@ -198,6 +203,7 @@ impl AsInputReport for EacInputReport {}
 
 /// EAC LED control output report
 #[derive(Default, PartialEq, Eq, FromBytes)]
+#[repr(C)]
 pub struct EacOutputLedReport {
     pub led: u8,
     pub backlight: [u8; 3],
@@ -205,6 +211,7 @@ pub struct EacOutputLedReport {
 
 /// EAC LED mode control output report
 #[derive(Default, PartialEq, Eq, FromBytes)]
+#[repr(C)]
 pub struct EacOutputLedControlReport {
     pub mode: u8,
 }
