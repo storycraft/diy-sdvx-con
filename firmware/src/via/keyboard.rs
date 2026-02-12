@@ -38,9 +38,9 @@ impl ViaCmd<'_> {
                 let matrix = [
                     ((read.buttons.start == Level::High) as u8) << 1,
                     ((read.buttons.button1 == Level::High) as u8)
-                        | ((read.buttons.button2 == Level::High) as u8)
-                        | ((read.buttons.button3 == Level::High) as u8)
-                        | ((read.buttons.button4 == Level::High) as u8),
+                        | ((read.buttons.button2 == Level::High) as u8) << 1
+                        | ((read.buttons.button3 == Level::High) as u8) << 2
+                        | ((read.buttons.button4 == Level::High) as u8) << 3,
                     ((read.buttons.fx1 == Level::High) as u8)
                         | ((read.buttons.fx2 == Level::High) as u8) << 1,
                 ];
