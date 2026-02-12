@@ -25,7 +25,7 @@ pub fn eac<'a>() -> embassy_usb::class::hid::Config<'a> {
         report_descriptor: eac::EAC_HID_DESC,
         request_handler: None,
         poll_ms: 1,
-        max_packet_size: 4,
+        max_packet_size: 8,
     }
 }
 
