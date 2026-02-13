@@ -1,7 +1,8 @@
+use static_cell::{ConstStaticCell};
 use usbd_hid::descriptor::{KeyboardReport, MouseReport, SerializedDescriptor};
 
 use crate::usb::{
-    eac,
+    eac::{self, EacHidHandler},
     hid::{GamepadInputReport, QmkRawHidReport},
 };
 
@@ -10,8 +11,9 @@ pub const EAC_DEVICE: embassy_usb::Config = device_config(embassy_usb::Config::n
 
 /// USB device configuration
 const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb::Config<'static> {
-    config.manufacturer = Some("SDVX-Con");
-    config.product = Some("SDVX Controller");
+    config.manufacturer = Some("Konami Amusement");
+    config.product = Some("SOUND VOLTEX controller");
+    config.serial_number = Some("SDVX");
 
     config.max_power = 100;
     // USB 2.0 High Speed Maximum Packet Size
@@ -21,9 +23,11 @@ const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb:
 }
 
 pub fn eac<'a>() -> embassy_usb::class::hid::Config<'a> {
+    static HANDLER: ConstStaticCell<EacHidHandler> = ConstStaticCell::new(EacHidHandler::new());
+
     embassy_usb::class::hid::Config {
         report_descriptor: eac::EAC_HID_DESC,
-        request_handler: None,
+        request_handler: Some(HANDLER.take()),
         poll_ms: 1,
         max_packet_size: 8,
     }
