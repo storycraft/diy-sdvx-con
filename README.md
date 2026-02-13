@@ -6,6 +6,7 @@ DIY SDVX Controller Firmware for RP235X microcontroller family.
 - Dynamic keymapping using [Via](https://www.usevia.app/).
 - Multithreaded LED control.
 - Efficient cooperative multitasking architecture via async Rust([Embassy](https://embassy.dev/)).
+- Official SDVX controller(EAC Mode) compatibility.
 
 ## Requirements
 - Rust Toolchain (for development. With `thumbv8m.main-none-eabihf` target)
