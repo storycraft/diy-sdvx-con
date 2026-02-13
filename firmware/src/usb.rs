@@ -4,7 +4,8 @@ pub mod hid;
 
 use embassy_executor::Spawner;
 use embassy_rp::{peripherals::USB, usb::Driver as UsbDriver};
-use static_cell::StaticCell;
+use embassy_usb::{Builder, Handler, types::StringIndex};
+use static_cell::{ConstStaticCell, StaticCell};
 
 use crate::{
     input::{
@@ -32,14 +33,13 @@ pub fn init_usb(
         StaticCell::new();
 
     let eac_mode = userdata::get(|data| data.eac_mode);
-    let config = if eac_mode {
-        config::EAC_DEVICE
-    } else {
-        config::DEVICE
-    };
     let mut builder = embassy_usb::Builder::new(
         driver,
-        config,
+        if eac_mode {
+            config::EAC_DEVICE
+        } else {
+            config::DEVICE
+        },
         CONFIG_DESCRIPTOR.init([0; _]),
         BOS_DESCRIPTOR.init([0; _]),
         MSOS_DESCRIPTOR.init([0; _]),
@@ -49,7 +49,6 @@ pub fn init_usb(
     // Setup logger task
     spawner.must_spawn(logger_task(&mut builder));
 
-    let eac_mode = userdata::get(|data| data.eac_mode);
     if eac_mode {
         // Setup EAC input task
         spawner.must_spawn(eac_input_task(
@@ -71,6 +70,54 @@ pub fn init_usb(
         spawner.must_spawn(via_task(&mut builder));
     }
 
+    let handler = setup_handler(&mut builder);
+    builder.handler(handler);
+
     let mut device = builder.build();
     async move { device.run().await }
+}
+
+struct UsbHandler;
+impl Handler for UsbHandler {
+    fn addressed(&mut self, addr: u8) {
+        defmt::info!("USB Addressed: {}", addr);
+    }
+
+    fn configured(&mut self, configured: bool) {
+        defmt::info!("USB Configured: {}", configured);
+    }
+
+    fn get_string(&mut self, index: StringIndex, _lang_id: u16) -> Option<&str> {
+        match index.0 {
+            // EAC mode strings
+            4 => Some("BT-A"),
+            5 => Some("BT-B"),
+            6 => Some("BT-C"),
+            7 => Some("BT-D"),
+            8 => Some("FX-1"),
+            9 => Some("FX-2"),
+            10 => Some("Start"),
+            11 => Some("Controller R"),
+            12 => Some("Controller G"),
+            13 => Some("Controller B"),
+            _ => None,
+        }
+    }
+}
+
+fn setup_handler(builder: &mut Builder<'static, Driver>) -> &'static mut UsbHandler {
+    // Reserve EAC mode strings
+    _ = builder.string(); // BT-A
+    _ = builder.string(); // BT-B
+    _ = builder.string(); // BT-C
+    _ = builder.string(); // BT-D
+    _ = builder.string(); // FX-1
+    _ = builder.string(); // FX-2
+    _ = builder.string(); // Start
+    _ = builder.string(); // Controller R
+    _ = builder.string(); // Controller G
+    _ = builder.string(); // Controller B
+
+    static HANDLER: ConstStaticCell<UsbHandler> = ConstStaticCell::new(UsbHandler);
+    HANDLER.take()
 }
