@@ -4,4 +4,4 @@ mod button;
 mod knob;
 
 pub use button::ButtonDebouncer;
-pub use knob::KnobFilter;
+pub use knob::{KnobFilter, KnobValue};

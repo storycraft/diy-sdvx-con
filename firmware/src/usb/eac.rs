@@ -186,10 +186,10 @@ pub struct EacInputReport {
     pub report_id: u8,
     /// Button states bt-a, bt-b, bt-c, bt-d, fx-1, fx-2, service, test, start
     pub buttons: u16,
-    /// Analog x
-    pub x: i8,
-    /// Analog y
-    pub y: i8,
+    /// Absolute analog x
+    pub x: u8,
+    /// Absolute analog y
+    pub y: u8,
 }
 
 impl Serialize for EacInputReport {

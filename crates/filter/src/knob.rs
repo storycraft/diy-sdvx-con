@@ -1,3 +1,27 @@
+#[derive(Clone, Copy, PartialEq, Eq)]
+/// Knob value after filtering
+pub struct KnobValue {
+    pub absolute: u16,
+    pub delta: i16,
+}
+
+impl KnobValue {
+    pub const DEFAULT: Self = Self {
+        absolute: 0,
+        delta: 0,
+    };
+
+    pub const fn new(absolute: u16, delta: i16) -> Self {
+        Self { absolute, delta }
+    }
+}
+
+impl Default for KnobValue {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
 /// A filter to reduce noise in the knob value,
 /// preventing the knob value from changing until it reaches the threshold or the throttle time has elapsed.
 pub struct KnobFilter<const THRESHOLD_VALUE: i16, const THROTTLE_DURATION_MS: u16> {
@@ -19,7 +43,7 @@ impl<const THRESHOLD_VALUE: i16, const THROTTLE_DURATION_MS: u16>
         }
     }
 
-    pub fn filter(&mut self, raw_value: u16, elapsed_ms: u16) -> i16 {
+    pub fn filter(&mut self, raw_value: u16, elapsed_ms: u16) -> KnobValue {
         let delta = {
             let d = raw_value as i16 - self.last_raw_value as i16;
             if d >= 2048 {
@@ -36,16 +60,17 @@ impl<const THRESHOLD_VALUE: i16, const THROTTLE_DURATION_MS: u16>
             // Prevent changes in throttle time.
             if self.timer != 0 {
                 self.timer = self.timer.saturating_sub(elapsed_ms);
-                return self.filtered_delta;
+                return KnobValue::new(self.last_raw_value, self.filtered_delta);
             }
 
             self.filtered_delta = 0;
-            return 0;
+            return KnobValue::new(self.last_raw_value, 0);
         }
 
         self.last_raw_value = raw_value;
         self.timer = THROTTLE_DURATION_MS;
+
         self.filtered_delta = delta;
-        delta
+        KnobValue::new(raw_value, delta)
     }
 }

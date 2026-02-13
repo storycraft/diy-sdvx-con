@@ -158,8 +158,8 @@ fn report_eac_inputs(input: InputRead) {
             | ((input.buttons.fx1 as u16) << 4)
             | ((input.buttons.fx2 as u16) << 5)
             | ((input.buttons.start as u16) << 8),
-        x: (input.knobs.0 >> 5) as i8,
-        y: (input.knobs.1 >> 5) as i8,
+        x: (input.knobs.0.absolute >> 4) as u8,
+        y: (input.knobs.1.absolute >> 4) as u8,
     });
 }
 
@@ -173,12 +173,11 @@ fn report_hid_inputs(keymap: &Keymap, input: InputRead) {
     reports.key(keymap.fx1, input.buttons.fx1 == Level::High);
     reports.key(keymap.fx2, input.buttons.fx2 == Level::High);
     reports.key(keymap.start, input.buttons.start == Level::High);
-
-    let left_knob = KnobTurn::from(input.knobs.0);
+    let left_knob = KnobTurn::from(input.knobs.0.delta);
     reports.key(keymap.left_knob_left, left_knob == KnobTurn::Left);
     reports.key(keymap.left_knob_right, left_knob == KnobTurn::Right);
 
-    let right_knob = KnobTurn::from(input.knobs.1);
+    let right_knob = KnobTurn::from(input.knobs.1.delta);
     reports.key(keymap.right_knob_left, right_knob == KnobTurn::Left);
     reports.key(keymap.right_knob_right, right_knob == KnobTurn::Right);
 

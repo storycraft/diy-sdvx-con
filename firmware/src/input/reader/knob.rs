@@ -3,6 +3,7 @@ use embassy_rp::{
     adc::{self, Adc},
     peripherals::DMA_CH0,
 };
+use filter::KnobValue;
 
 use crate::input::config::{KNOB_SAMPLES, KnobFilter};
 
@@ -38,7 +39,7 @@ impl<'a> KnobInputReader<'a> {
         }
     }
 
-    pub async fn read(&mut self, elapsed_ms: u16) -> (i16, i16) {
+    pub async fn read(&mut self, elapsed_ms: u16) -> (KnobValue, KnobValue) {
         // Perform adc multi read
         self.adc
             .read_many_multichannel(&mut self.knobs, &mut self.knob_buf, 96, self.dma.reborrow())
