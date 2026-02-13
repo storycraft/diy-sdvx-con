@@ -158,8 +158,8 @@ fn report_eac_inputs(input: InputRead) {
             | ((input.buttons.fx1 as u16) << 4)
             | ((input.buttons.fx2 as u16) << 5)
             | ((input.buttons.start as u16) << 8),
-        x: (input.knobs.0 >> 4) as i8,
-        y: (input.knobs.1 >> 4) as i8,
+        x: (input.knobs.0 >> 5) as i8,
+        y: (input.knobs.1 >> 5) as i8,
     });
 }
 
