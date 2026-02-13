@@ -1,4 +1,4 @@
-use static_cell::{ConstStaticCell};
+use static_cell::ConstStaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MouseReport, SerializedDescriptor};
 
 use crate::usb::{
@@ -6,15 +6,28 @@ use crate::usb::{
     hid::{GamepadInputReport, QmkRawHidReport},
 };
 
-pub const DEVICE: embassy_usb::Config = device_config(embassy_usb::Config::new(0x3d5a, 0xcafe));
-pub const EAC_DEVICE: embassy_usb::Config = device_config(embassy_usb::Config::new(0x1ccf, 0x101c));
+pub const DEVICE: embassy_usb::Config = hid_device_config();
+pub const EAC_DEVICE: embassy_usb::Config = eac_device_config();
 
-/// USB device configuration
-const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb::Config<'static> {
+const fn hid_device_config() -> embassy_usb::Config<'static> {
+    let mut config = embassy_usb::Config::new(0x3d5a, 0xcafe);
+    config.manufacturer = Some("SDVX-Con");
+    config.product = Some("SDVX Controller");
+
+    device_config(config)
+}
+
+const fn eac_device_config() -> embassy_usb::Config<'static> {
+    let mut config = embassy_usb::Config::new(0x1ccf, 0x101c);
     config.manufacturer = Some("Konami Amusement");
     config.product = Some("SOUND VOLTEX controller");
     config.serial_number = Some("SDVX");
 
+    device_config(config)
+}
+
+/// Common USB device configuration
+const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb::Config<'static> {
     config.max_power = 100;
     // USB 2.0 High Speed Maximum Packet Size
     config.max_packet_size_0 = 64;
