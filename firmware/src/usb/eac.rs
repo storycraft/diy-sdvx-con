@@ -184,7 +184,7 @@ pub const EAC_HID_DESC: &[u8] = &[
 pub struct EacInputReport {
     /// Report ID (4)
     pub report_id: u8,
-    /// Button states from button 1 to button 9
+    /// Button states bt-a, bt-b, bt-c, bt-d, fx-1, fx-2, service, test, start
     pub buttons: u16,
     /// Analog x
     pub x: i8,
