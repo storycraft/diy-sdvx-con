@@ -1,0 +1,26 @@
+{
+  "name": "SDVX Controller",
+  "vendorProductId": 1029360382,
+  "macros": ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+  "layers": [
+    [
+      "KC_NO",
+      "CUSTOM(9)",
+      "KC_NO",
+      "KC_NO",
+      "CUSTOM(6)",
+      "CUSTOM(4)",
+      "CUSTOM(5)",
+      "CUSTOM(7)",
+      "CUSTOM(18)",
+      "CUSTOM(1)",
+      "KC_NO",
+      "KC_NO"
+    ]
+  ],
+  "encoders": [
+    [["KC_NO", "KC_NO"]],
+    [["CUSTOM(17)", "CUSTOM(19)"]],
+    [["CUSTOM(0)", "CUSTOM(2)"]]
+  ]
+}

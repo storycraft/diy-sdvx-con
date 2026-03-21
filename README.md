@@ -49,5 +49,10 @@ cargo xtask flash --release
 27. Right knob
 28. unused
 
+## Credits
+* [TolLight](https://x.com/light0185): Silkscreen illustration
+
 ## License
 The firmware source code is licensed under GPL-2.0.
+
+The PCB design is licensed under CC BY-NC-ND.
