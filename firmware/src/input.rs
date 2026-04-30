@@ -53,7 +53,20 @@ pub fn eac_input_task(
         button_reader: ButtonInputReader<'static>,
         knob_reader: KnobInputReader<'static>,
     ) {
-        input_read_loop(button_reader, knob_reader, report_eac_inputs).await;
+        input_read_loop(button_reader, knob_reader, |input| {
+            report_eac_inputs(input);
+
+            led::update(LedState {
+                button_1: input.buttons.button1,
+                button_2: input.buttons.button2,
+                button_3: input.buttons.button3,
+                button_4: input.buttons.button4,
+                fx_1: input.buttons.fx1,
+                fx_2: input.buttons.fx2,
+                start: input.buttons.start,
+            });
+        })
+        .await;
     }
 
     spawner.must_spawn(report::eac_report_task(builder));

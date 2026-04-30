@@ -1,8 +1,7 @@
-use static_cell::ConstStaticCell;
 use usbd_hid::descriptor::{KeyboardReport, MouseReport, SerializedDescriptor};
 
 use crate::usb::{
-    eac::{self, EacHidHandler},
+    eac::{self},
     hid::{GamepadInputReport, QmkRawHidReport},
 };
 
@@ -36,11 +35,9 @@ const fn device_config(mut config: embassy_usb::Config<'static>) -> embassy_usb:
 }
 
 pub fn eac<'a>() -> embassy_usb::class::hid::Config<'a> {
-    static HANDLER: ConstStaticCell<EacHidHandler> = ConstStaticCell::new(EacHidHandler::new());
-
     embassy_usb::class::hid::Config {
         report_descriptor: eac::EAC_HID_DESC,
-        request_handler: Some(HANDLER.take()),
+        request_handler: None,
         poll_ms: 1,
         max_packet_size: 8,
     }

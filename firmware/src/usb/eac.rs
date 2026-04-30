@@ -1,12 +1,4 @@
-use embassy_rp::gpio::Level;
-use embassy_usb::{
-    class::hid::{ReportId, RequestHandler},
-    control::OutResponse,
-};
 use usbd_hid::descriptor::generator_prelude::*;
-use zerocopy::{FromBytes, Immutable, KnownLayout};
-
-use crate::led::{self, LedState};
 
 #[rustfmt::skip]
 pub const EAC_HID_DESC: &[u8] = &[
@@ -207,76 +199,3 @@ impl Serialize for EacInputReport {
 }
 
 impl AsInputReport for EacInputReport {}
-
-/// EAC LED control output report
-#[derive(Default, PartialEq, Eq, KnownLayout, Immutable, FromBytes)]
-#[repr(C)]
-pub struct EacOutputLedReport {
-    pub led: u8,
-    pub backlight: [u8; 3],
-}
-
-/// EAC LED mode control output report
-#[derive(Default, PartialEq, Eq, KnownLayout, Immutable, FromBytes)]
-#[repr(C)]
-pub struct EacOutputLedControlReport {
-    pub mode: u8,
-}
-
-pub struct EacHidHandler {
-    led_mode: u8,
-}
-
-impl EacHidHandler {
-    pub const fn new() -> Self {
-        Self { led_mode: 0 }
-    }
-}
-
-impl RequestHandler for EacHidHandler {
-    fn get_report(&mut self, id: ReportId, buf: &mut [u8]) -> Option<usize> {
-        match id {
-            // LED mode
-            ReportId::Feature(7) => {
-                buf[0] = self.led_mode;
-                Some(1)
-            }
-            _ => None,
-        }
-    }
-
-    fn set_report(&mut self, id: ReportId, data: &[u8]) -> OutResponse {
-        match id {
-            // Set LED
-            ReportId::Out(5) => {
-                let Ok((report, _)) = EacOutputLedReport::ref_from_prefix(data) else {
-                    return OutResponse::Rejected;
-                };
-
-                led::update(LedState {
-                    button_1: Level::from(report.led & 0b0000_0001 != 0),
-                    button_2: Level::from(report.led & 0b0000_0010 != 0),
-                    button_3: Level::from(report.led & 0b0000_0100 != 0),
-                    button_4: Level::from(report.led & 0b0000_1000 != 0),
-                    fx_1: Level::from(report.led & 0b0001_0000 != 0),
-                    fx_2: Level::from(report.led & 0b0010_0000 != 0),
-                    start: Level::from(report.led & 0b0100_0000 != 0),
-                });
-
-                OutResponse::Accepted
-            }
-
-            // LED mode
-            ReportId::Feature(7) => {
-                let Ok((report, _)) = EacOutputLedControlReport::ref_from_prefix(data) else {
-                    return OutResponse::Rejected;
-                };
-                self.led_mode = report.mode;
-                defmt::info!("EAC LED mode set to {}", report.mode);
-
-                OutResponse::Accepted
-            }
-            _ => OutResponse::Rejected,
-        }
-    }
-}
