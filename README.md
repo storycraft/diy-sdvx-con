@@ -10,7 +10,7 @@ DIY SDVX Controller Firmware for RP235X microcontroller family.
 
 ## Mode switching
 - Pressing FX1 + FX2 + BT1 + Start on start changes to eac mode.
-- Pressing FX1 + FX2 + BT1 + Start on start changes to kbm mode.
+- Pressing FX1 + FX2 + BT2 + Start on start changes to kbm mode.
 
 ## Requirements
 - Rust Toolchain (for development. With `thumbv8m.main-none-eabihf` target)
